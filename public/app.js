@@ -53,6 +53,7 @@ const el = {
   registerDisplayName: document.querySelector('#registerDisplayName'),
   registerUsername: document.querySelector('#registerUsername'),
   registerPassword: document.querySelector('#registerPassword'),
+  registerConfirmPassword: document.querySelector('#registerConfirmPassword'),
   userBadge: document.querySelector('#userBadge'),
   currentUserAvatar: document.querySelector('#currentUserAvatar'),
   avatarLabel: document.querySelector('#avatarLabel'),
@@ -136,6 +137,7 @@ const el = {
   newGameName: document.querySelector('#newGameName'),
   newUsername: document.querySelector('#newUsername'),
   newPassword: document.querySelector('#newPassword'),
+  newConfirmPassword: document.querySelector('#newConfirmPassword'),
   newRole: document.querySelector('#newRole'),
   roleSettingsForm: document.querySelector('#roleSettingsForm'),
   roleKey: document.querySelector('#roleKey'),
@@ -302,12 +304,18 @@ async function login() {
 
 async function register() {
   try {
+    if (el.registerPassword.value !== el.registerConfirmPassword.value) {
+      showToast('Hai lần nhập mật khẩu không khớp.', 'error');
+      el.registerConfirmPassword.focus();
+      return;
+    }
     const data = await api('/api/auth/register', {
       method: 'POST',
       body: {
         displayName: el.registerDisplayName.value,
         username: el.registerUsername.value,
-        password: el.registerPassword.value
+        password: el.registerPassword.value,
+        confirmPassword: el.registerConfirmPassword.value
       }
     });
     token = data.token;
@@ -855,6 +863,12 @@ async function loadMods() {
 }
 
 function renderModList() {
+  // Sidebar mod list removed in v2.29. Keep loading mod data for the home leaderboard.
+  if (!el.modList) {
+    renderHomeLeaderboard();
+    return;
+  }
+
   if (!modList.length) {
     el.modList.innerHTML = '<p class="muted">Chưa có Cameo/mod/admin nào.</p>';
     renderHomeLeaderboard();
@@ -1842,6 +1856,11 @@ async function saveRoleDefinitions(nextRoles) {
 
 async function createUser() {
   try {
+    if (el.newPassword.value !== el.newConfirmPassword.value) {
+      showToast('Hai lần nhập mật khẩu không khớp.', 'error');
+      el.newConfirmPassword.focus();
+      return;
+    }
     await api('/api/users', {
       method: 'POST',
       body: {
@@ -1849,6 +1868,7 @@ async function createUser() {
         gameName: el.newGameName.value,
         username: el.newUsername.value,
         password: el.newPassword.value,
+        confirmPassword: el.newConfirmPassword.value,
         role: el.newRole.value
       }
     });
