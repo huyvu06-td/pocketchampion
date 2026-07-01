@@ -2152,3 +2152,48 @@ body {
 .mod-item .role-pill {
   margin-top: 2px;
 }
+
+/* v2.25: nút tìm kiếm rõ ràng, danh sách mod xuống dưới và bỏ badge role trong mod list. */
+.search-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.search-row input {
+  min-width: 0;
+}
+
+.search-submit {
+  min-height: 45px;
+  white-space: nowrap;
+  padding-left: 14px;
+  padding-right: 14px;
+}
+
+.mod-item > div {
+  min-width: 0;
+}
+
+.mod-item strong {
+  margin-bottom: 0;
+}
+
+@media (max-width: 720px) {
+  .search-row {
+    grid-template-columns: 1fr;
+  }
+
+  .search-submit {
+    width: 100%;
+  }
+
+  .pet-list {
+    margin-bottom: 14px;
+  }
+
+  .mod-board {
+    margin-top: 16px;
+  }
+}

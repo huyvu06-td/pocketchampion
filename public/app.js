@@ -94,6 +94,7 @@ const el = {
   donateImageInput: document.querySelector('#donateImageInput'),
   btnClearDonateImage: document.querySelector('#btnClearDonateImage'),
   searchInput: document.querySelector('#searchInput'),
+  btnSearch: document.querySelector('#btnSearch'),
   creatureSuggestions: document.querySelector('#creatureSuggestions'),
   skillSuggestions: document.querySelector('#skillSuggestions'),
   homeLeaderboard: document.querySelector('#homeLeaderboard'),
@@ -207,6 +208,13 @@ function wireEvents() {
   el.importFile.addEventListener('change', importBuilds);
   el.searchInput.addEventListener('input', debounce(loadCreatures, 250));
   el.searchInput.addEventListener('change', selectCreatureFromTypedName);
+  el.searchInput.addEventListener('keydown', event => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      performSearch();
+    }
+  });
+  el.btnSearch?.addEventListener('click', performSearch);
   el.roleFilter.addEventListener('change', renderDetail);
 
   el.form.addEventListener('submit', async event => {
@@ -828,7 +836,6 @@ function renderModList() {
       ${avatarHtml(mod, 'avatar-xs')}
       <div>
         <strong>${roleNameHtml(mod)}</strong>
-        ${roleBadgeHtml(mod.role)}
       </div>
       <span class="badge">${Number(mod.buildCount || 0)} build</span>
     </button>
@@ -949,6 +956,27 @@ function renderSkillSuggestions() {
 
 function skillPoolHtml() {
   return '';
+}
+
+async function performSearch() {
+  await loadCreatures();
+  const typedRaw = el.searchInput.value.trim();
+  if (!typedRaw) return;
+  const typed = typedRaw.toLocaleLowerCase('vi-VN');
+  const exact = creatures.find(creature => String(creature.name || '').trim().toLocaleLowerCase('vi-VN') === typed);
+  if (exact) {
+    await selectCreature(exact.id);
+    return;
+  }
+  if (creatures.length === 1) {
+    await selectCreature(creatures[0].id);
+    return;
+  }
+  if (!creatures.length) {
+    showToast(canCreateBuild()
+      ? 'Không tìm thấy tên Pokémon này. Mod/admin có thể thêm tên trong Quản lý tên linh thú.'
+      : 'Không tìm thấy Pokémon đã có build phù hợp.', 'error');
+  }
 }
 
 async function selectCreatureFromTypedName() {

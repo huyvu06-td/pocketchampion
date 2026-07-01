@@ -1,7 +1,7 @@
 {
   "name": "pocket-champion-linhthu-online",
-  "version": "2.24.0",
-  "description": "Web online tra cứu build Pokémon Pocket Champion với MongoDB, phân quyền, backup/restore, donate, Pokémon tiến hóa cuối Gen 1-9, 4 ô skill autocomplete, đội hình gợi ý, custom role, màu tên/logo role, avatar 256KB và sửa mở hồ sơ mod.",
+  "version": "2.25.0",
+  "description": "Web online tra cứu build Pokémon Pocket Champion với MongoDB, phân quyền, backup/restore, donate, Pokémon tiến hóa cuối Gen 1-9, 4 ô skill autocomplete, đội hình gợi ý, custom role, màu tên/logo role, avatar 256KB và sửa mở hồ sơ mod, nút tìm kiếm, đưa danh sách mod xuống cuối và bỏ nhãn role dư trong danh sách mod.",
   "main": "server.js",
   "type": "commonjs",
   "scripts": {

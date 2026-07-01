@@ -1,3 +1,15 @@
+# POCKET CHAMPION online v2.25
+
+Bản này chỉnh giao diện tra cứu:
+
+- Thêm nút **Tìm kiếm** cạnh ô nhập tên Pokémon.
+- Người dùng nhập tên rồi bấm **Tìm kiếm** sẽ mở build nếu tìm được đúng tên hoặc chỉ có một kết quả.
+- Đưa **Danh sách mod** xuống dưới danh sách Pokémon để trên mobile ưu tiên phần tra cứu/build.
+- Xóa chữ/badge role dư như “mod - thêm tên + build” trong danh sách mod.
+- Giữ màu tên và logo role để vẫn nhận diện được admin/mod/cameo.
+
+---
+
 # POCKET CHAMPION online v2.24
 
 Bản này bỏ hẳn khối **Liên kết chính thức** bị trùng trong sidebar. Link chỉ còn ở phía trên trang và màn hình đăng nhập.
