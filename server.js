@@ -8,6 +8,7 @@ const compression = require('compression');
 const { User } = require('./src/models/User');
 const { Beast } = require('./src/models/Beast');
 const { Creature, creatureKey } = require('./src/models/Creature');
+const { seedPokemonCatalog } = require('./src/utils/pokemonSeed');
 
 const authRoutes = require('./src/routes/auth');
 const beastRoutes = require('./src/routes/beasts');
@@ -29,11 +30,11 @@ if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 24) {
 
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(compression());
-app.use(express.json({ limit: '1mb' }));
+app.use(express.json({ limit: '8mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/api/health', (req, res) => {
-  res.json({ ok: true, app: 'Pocket Champion - build pokemon' });
+  res.json({ ok: true, app: 'Pocket Champion Linh Thu Online' });
 });
 
 app.use('/api/settings', settingRoutes);
@@ -171,6 +172,14 @@ async function start() {
   await seedAdmin();
   await migrateBeastIndexes();
   await syncCreatureCatalogFromBuilds();
+  if (String(process.env.AUTO_SEED_POKEMON || 'true').toLowerCase() !== 'false') {
+    const seedResult = await seedPokemonCatalog({ force: false });
+    if (seedResult.skipped) {
+      console.log(`Pokémon catalog already seeded: ${seedResult.existing}/${seedResult.total}`);
+    } else {
+      console.log(`Seeded Pokémon catalog: ${seedResult.inserted} inserted, ${seedResult.modified} updated, ${seedResult.total} total`);
+    }
+  }
 
   app.listen(PORT, () => {
     console.log(`Pocket Champion app is running on port ${PORT}`);

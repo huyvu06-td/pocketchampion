@@ -5,8 +5,7 @@ const MAX_TOTAL_STATS = 510;
 
 const skillSchema = new mongoose.Schema(
   {
-    name: { type: String, trim: true, maxlength: 120, default: '' },
-    desc: { type: String, trim: true, maxlength: 2000, default: '' }
+    name: { type: String, trim: true, maxlength: 120, default: '' }
   },
   { _id: false }
 );

@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const { Creature, normalizeCreatureName, creatureKey } = require('../models/Creature');
 const { Beast } = require('../models/Beast');
 const { requireAuth, requireRole } = require('../middleware/auth');
+const { seedPokemonCatalog, pokemonCatalogStats } = require('../utils/pokemonSeed');
 
 const router = express.Router();
 const USER_SELECT = 'username displayName gameName role avatarData';
@@ -65,6 +66,24 @@ router.get('/', async (req, res) => {
   });
 });
 
+
+router.get('/pokemon/stats', async (req, res) => {
+  const existing = await Creature.countDocuments({ source: 'pokemon-gen1-9' });
+  res.json({ ...pokemonCatalogStats(), existing });
+});
+
+router.post('/seed-pokemon', requireRole('admin'), async (req, res) => {
+  try {
+    const result = await seedPokemonCatalog({ userId: req.user._id, force: true });
+    res.json({
+      ...result,
+      message: `Đã nhập sẵn ${result.total} Pokémon Gen 1-9 và ${result.totalSkills} tên skill. Thêm mới ${result.inserted}, cập nhật ${result.modified}.`
+    });
+  } catch (error) {
+    res.status(400).json({ message: error.message || 'Không thể nhập sẵn Pokémon.' });
+  }
+});
+
 router.get('/:id', async (req, res) => {
   if (!mongoose.isValidObjectId(req.params.id)) {
     return res.status(404).json({ message: 'Không tìm thấy linh thú.' });
@@ -80,7 +99,7 @@ router.get('/:id', async (req, res) => {
     .sort({ updatedAt: -1, createdAt: -1 });
 
   res.json({
-    creature: creature.toClient(builds.length),
+    creature: creature.toClient(builds.length, { includeSkills: true }),
     builds: builds.map(build => build.toClient({ viewer: req.user }))
   });
 });

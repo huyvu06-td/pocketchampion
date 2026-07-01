@@ -1,7 +1,7 @@
 {
   "name": "pocket-champion-linhthu-online",
-  "version": "2.9.0",
-  "description": "Web online tra cuu va quan ly build linh thu Pocket Champion voi MongoDB, phan quyen, avatar, catalog linh thu, autocomplete, leaderboard, backup/restore, Cameo builder, mod them ten linh thu, xoa build troll, donate va khoa dang ky tu do.",
+  "version": "2.13.0",
+  "description": "Web online tra cứu build linh thú Pocket Champion với MongoDB, phân quyền, backup/restore, donate, Pokémon Gen 1-9 và gợi ý tên skill, không lưu mô tả skill.",
   "main": "server.js",
   "type": "commonjs",
   "scripts": {

@@ -87,6 +87,7 @@ const el = {
   nature: document.querySelector('#nature'),
   passive: document.querySelector('#passive'),
   skillsWrap: document.querySelector('#skillsWrap'),
+  skillSuggestions: document.querySelector('#skillSuggestions'),
   hp: document.querySelector('#hp'),
   atk: document.querySelector('#atk'),
   satk: document.querySelector('#satk'),
@@ -113,6 +114,7 @@ const el = {
   bulkCreatureForm: document.querySelector('#bulkCreatureForm'),
   bulkCreatureNames: document.querySelector('#bulkCreatureNames'),
   creatureAdminSummary: document.querySelector('#creatureAdminSummary'),
+  btnSeedPokemon: document.querySelector('#btnSeedPokemon'),
   btnDeleteAllCreatures: document.querySelector('#btnDeleteAllCreatures'),
   creaturesTable: document.querySelector('#creaturesTable')
 };
@@ -188,6 +190,7 @@ function wireEvents() {
     event.preventDefault();
     await bulkCreateCreatures();
   });
+  el.btnSeedPokemon?.addEventListener('click', seedPokemonCatalog);
   el.btnDeleteAllCreatures.addEventListener('click', deleteAllCreatures);
 
   window.addEventListener('popstate', () => applyRouteFromUrl(false));
@@ -606,6 +609,8 @@ function renderList() {
       <div>
         <h3>${escapeHtml(creature.name)}</h3>
         <div class="pet-meta">
+          ${creature.generation ? `<span class="badge">Gen ${Number(creature.generation)}</span>` : ''}
+          ${Number(creature.suggestedSkillCount || 0) ? `<span class="badge">${Number(creature.suggestedSkillCount)} skill</span>` : ''}
           <span class="badge">${Number(creature.buildCount || 0)} build</span>
         </div>
       </div>
@@ -624,6 +629,34 @@ function renderCreatureSuggestions() {
     .slice(0, 80)
     .map(creature => `<option value="${escapeAttr(creature.name)}"></option>`)
     .join('');
+}
+
+function renderSkillSuggestions(skills = []) {
+  if (!el.skillSuggestions) return;
+  const uniqueSkills = [...new Set((Array.isArray(skills) ? skills : []).map(skill => String(skill || '').trim()).filter(Boolean))];
+  el.skillSuggestions.innerHTML = uniqueSkills
+    .slice(0, 500)
+    .map(skill => `<option value="${escapeAttr(skill)}"></option>`)
+    .join('');
+}
+
+function skillPoolHtml(skills = []) {
+  const uniqueSkills = [...new Set((Array.isArray(skills) ? skills : []).map(skill => String(skill || '').trim()).filter(Boolean))];
+  if (!uniqueSkills.length) return '';
+  return `
+    <section class="form-section creature-skill-pool">
+      <div class="section-title">
+        <h3>Skill gợi ý của Pokémon</h3>
+        <p>Có ${uniqueSkills.length} tên skill để chọn khi build. Chỉ lưu tên skill, không cần mô tả chiêu thức.</p>
+      </div>
+      <details>
+        <summary>Xem danh sách skill</summary>
+        <div class="skill-chip-grid">
+          ${uniqueSkills.map(skill => `<button class="skill-chip" data-skill="${escapeAttr(skill)}" type="button">${escapeHtml(skill)}</button>`).join('')}
+        </div>
+      </details>
+    </section>
+  `;
 }
 
 async function selectCreatureFromTypedName() {
@@ -795,7 +828,9 @@ function renderDetail() {
         <p class="eyebrow">Linh thú</p>
         <h2>${escapeHtml(selectedCreature.name)}</h2>
         <div class="pet-meta">
+          ${selectedCreature.generation ? `<span class="badge strong-badge">Pokémon Gen ${Number(selectedCreature.generation)}</span>` : ''}
           <span class="badge strong-badge">${Number(selectedCreature.buildCount || selectedBuilds.length || 0)} build</span>
+          ${Number(selectedCreature.suggestedSkillCount || selectedCreature.suggestedSkills?.length || 0) ? `<span class="badge">${Number(selectedCreature.suggestedSkillCount || selectedCreature.suggestedSkills?.length || 0)} skill</span>` : ''}
           ${alreadyBuilt ? '<span class="badge">Bạn đã có build</span>' : ''}
         </div>
       </div>
@@ -804,6 +839,8 @@ function renderDetail() {
         ${canBuild ? `<button id="btnBuildCreature" class="primary" type="button">${alreadyBuilt ? 'Sửa build của tôi' : 'Build linh thú này'}</button>` : ''}
       </div>
     </div>
+
+    ${skillPoolHtml(selectedCreature.suggestedSkills)}
 
     <section class="form-section">
       <div class="section-title">
@@ -837,6 +874,10 @@ function renderDetail() {
     });
   });
 
+  document.querySelectorAll('.skill-chip').forEach(button => {
+    button.addEventListener('click', () => copyText(button.dataset.skill || '', 'Đã copy tên skill.'));
+  });
+
   const copyBuildButton = document.querySelector('#btnCopyBuild');
   if (copyBuildButton && selectedBuild) copyBuildButton.addEventListener('click', () => copyBuild(selectedBuild));
   const editButton = document.querySelector('#btnEditBuild');
@@ -866,7 +907,11 @@ function buildCardHtml(build) {
 
 function sixSkillSlots(skills = []) {
   const cleaned = Array.isArray(skills) ? skills : [];
-  return Array.from({ length: 6 }, (_, index) => cleaned[index] || { name: '', desc: '' });
+  return Array.from({ length: 6 }, (_, index) => {
+    const skill = cleaned[index];
+    if (typeof skill === 'string') return { name: skill };
+    return { name: skill?.name || '' };
+  });
 }
 
 function buildDetailHtml(build) {
@@ -904,11 +949,11 @@ function buildDetailHtml(build) {
       <h3>Kỹ năng (Skills)</h3>
       <div class="skill-list">
         ${sixSkillSlots(build.skills).map((skill, index) => {
-          const hasContent = Boolean((skill.name || '').trim() || (skill.desc || '').trim());
+          const hasContent = Boolean((skill.name || '').trim());
           return `
             <div class="skill-card ${hasContent ? '' : 'empty'}">
               <span>${index + 1}</span>
-              <div><strong>${escapeHtml(skill.name || `Skill ${index + 1}`)}</strong><p>${escapeHtml(skill.desc || 'Chưa nhập.').replace(/\n/g, '<br>')}</p></div>
+              <div><strong>${escapeHtml(skill.name || `Skill ${index + 1}`)}</strong>${hasContent ? '' : '<p>Chưa nhập.</p>'}</div>
             </div>
           `;
         }).join('')}
@@ -949,6 +994,7 @@ function openBuildDialog(build = null) {
   el.skillsWrap.innerHTML = '';
 
   const creature = build?.creature || selectedCreature;
+  renderSkillSuggestions((selectedCreature && selectedCreature.id === (creature?.id || selectedCreature?.id)) ? selectedCreature.suggestedSkills : []);
   el.petId.value = build?.id || '';
   el.creatureId.value = creature?.id || selectedCreature?.id || '';
   el.name.value = creature?.name || selectedCreature?.name || build?.name || '';
@@ -970,29 +1016,27 @@ function openBuildDialog(build = null) {
     el.btnDelete.classList.add('hidden');
   }
 
-  while (el.skillsWrap.children.length < 6) addSkillRow({ name: '', desc: '' }, el.skillsWrap.children.length);
+  while (el.skillsWrap.children.length < 6) addSkillRow({ name: '' }, el.skillsWrap.children.length);
   updateStatPreview();
   el.dialog.showModal();
 }
 
-function addSkillRow(skill = { name: '', desc: '' }, index = el.skillsWrap.children.length) {
+function addSkillRow(skill = { name: '' }, index = el.skillsWrap.children.length) {
   if (el.skillsWrap.children.length >= 6) return;
   const slotNumber = Number(index) + 1;
   const row = document.createElement('div');
   row.className = 'skill-row fixed-skill-row';
   row.innerHTML = `
     <span class="skill-slot-label">Skill ${slotNumber}</span>
-    <input class="skill-name" placeholder="Tên skill ${slotNumber}" value="${escapeAttr(skill.name || '')}" />
-    <textarea class="skill-desc" rows="2" placeholder="Mô tả skill ${slotNumber}">${escapeHtml(skill.desc || '')}</textarea>
+    <input class="skill-name" list="skillSuggestions" placeholder="Tên skill ${slotNumber}" value="${escapeAttr(skill.name || '')}" />
   `;
   el.skillsWrap.appendChild(row);
 }
 
 function buildPayloadFromForm() {
-  const skills = [...el.skillsWrap.querySelectorAll('.skill-row')].map(row => ({
-    name: row.querySelector('.skill-name').value,
-    desc: row.querySelector('.skill-desc').value
-  })).filter(skill => skill.name.trim() || skill.desc.trim());
+  const skills = [...el.skillsWrap.querySelectorAll('.skill-row')]
+    .map(row => ({ name: row.querySelector('.skill-name').value }))
+    .filter(skill => skill.name.trim());
 
   return {
     creatureId: el.creatureId.value,
@@ -1090,7 +1134,7 @@ function copyBuild(build) {
     `Tính cách (Nature): ${build.nature || 'Chưa nhập'}`,
     `Nội tại (Ability): ${build.passive || 'Chưa nhập'}`,
     'Kỹ năng (Skills):',
-    ...sixSkillSlots(build.skills).map((skill, index) => `${index + 1}. ${skill.name || `Skill ${index + 1}`}: ${skill.desc || 'Chưa nhập.'}`),
+    ...sixSkillSlots(build.skills).map((skill, index) => `${index + 1}. ${skill.name || 'Chưa nhập'}`),
     `Berry / Chỉ số 510 điểm: ${STAT_KEYS.map(key => `${STAT_LABELS[key]} ${build.stats?.[key] || 0}`).join(' / ')}`,
     `Ghi chú (Notes): ${build.notes || 'Không có'}`
   ];
@@ -1154,6 +1198,7 @@ async function openCreaturesDialog() {
 
 function updateCreaturesDialogPermissions() {
   if (el.bulkCreatureForm) el.bulkCreatureForm.classList.toggle('hidden', !canManageCreatureNames());
+  if (el.btnSeedPokemon) el.btnSeedPokemon.classList.toggle('hidden', !canAdminCreatureNames());
   if (el.btnDeleteAllCreatures) el.btnDeleteAllCreatures.classList.toggle('hidden', !canAdminCreatureNames());
   const title = document.querySelector('#creaturesDialog .eyebrow');
   if (title) title.textContent = canAdminCreatureNames() ? 'Admin / Mod' : 'Mod';
@@ -1172,13 +1217,15 @@ function renderCreaturesTable(items, total = items.length) {
   }
 
   if (!items.length) {
-    el.creaturesTable.innerHTML = '<tr><td colspan="5">Chưa có tên linh thú.</td></tr>';
+    el.creaturesTable.innerHTML = '<tr><td colspan="7">Chưa có tên linh thú.</td></tr>';
     return;
   }
   el.creaturesTable.innerHTML = items.map((item, index) => `
     <tr>
       <td class="stt-cell">${index + 1}</td>
       <td><input class="creature-name-input" data-id="${escapeAttr(item.id)}" value="${escapeAttr(item.name)}" ${admin ? '' : 'readonly'} /></td>
+      <td>${item.generation ? `<span class="badge">Gen ${Number(item.generation)}</span>` : '<span class="muted">-</span>'}</td>
+      <td><span class="badge">${Number(item.suggestedSkillCount || 0)} skill</span></td>
       <td><span class="badge">${Number(item.buildCount || 0)} build</span></td>
       <td>${formatDate(item.updatedAt || item.createdAt)}</td>
       <td class="table-actions">
@@ -1210,6 +1257,18 @@ function renderCreaturesTable(items, total = items.length) {
   });
 }
 
+
+async function seedPokemonCatalog() {
+  if (!isAdmin()) return showToast('Chỉ admin được nhập sẵn Pokémon.', 'error');
+  if (!confirm('Nhập sẵn 1025 Pokémon Gen 1-9 kèm danh sách skill? Tên trùng sẽ được cập nhật skill, build cũ vẫn giữ nguyên.')) return;
+  try {
+    const result = await api('/api/creatures/seed-pokemon', { method: 'POST', body: {} });
+    showToast(result.message || 'Đã nhập sẵn Pokémon.');
+    await Promise.all([loadCreatures(), loadCreaturesForAdmin()]);
+  } catch (error) {
+    showToast(error.message || 'Không thể nhập sẵn Pokémon.', 'error');
+  }
+}
 
 async function createCreature() {
   try {

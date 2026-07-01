@@ -29,10 +29,9 @@ function normalizeSkills(skills = []) {
   if (!Array.isArray(skills)) return [];
   const cleaned = skills
     .map(skill => ({
-      name: cleanText(skill.name),
-      desc: cleanText(skill.desc)
+      name: cleanText(typeof skill === 'string' ? skill : skill?.name)
     }))
-    .filter(skill => skill.name || skill.desc);
+    .filter(skill => skill.name);
 
   if (cleaned.length < 1) {
     throw new Error('Cần nhập ít nhất 1 kỹ năng (Skill).');

@@ -209,3 +209,15 @@ Sau khi sửa xong, push lên GitHub. Render sẽ deploy lại và các nút lin
 - Admin có thể xóa trực tiếp từng bài build ở màn hình chi tiết bằng nút **Xóa build**, tiện xử lý các build troll/sai dữ liệu.
 
 Khuyến nghị: sau mỗi đợt thêm/sửa nhiều build, admin nên bấm **Sao lưu dữ liệu** và lưu file JSON vào Google Drive hoặc máy tính cá nhân.
+
+
+## Cập nhật v2.13
+
+- Tự nhập sẵn **1025 Pokémon Gen 1-9** vào danh sách tên linh thú.
+- Mỗi Pokémon có kèm danh sách **skill/move name** để gợi ý khi Cameo/mod/admin build.
+- Đã bỏ hoàn toàn mô tả skill; form build chỉ có 6 ô nhập **tên skill**.
+- Khi mở trang một Pokémon, người xem có thể xem danh sách skill gợi ý và bấm vào skill để copy tên.
+- Admin có thêm nút **Nhập sẵn Pokémon Gen 1-9** trong mục **Quản lý tên linh thú** để cập nhật lại danh sách bất cứ lúc nào.
+- Server sẽ tự seed Pokémon khi khởi động nếu chưa có dữ liệu. Có thể tắt bằng biến môi trường `AUTO_SEED_POKEMON=false`.
+
+Nguồn dữ liệu tên Pokémon và move name được lấy từ bộ CSV công khai của PokéAPI.

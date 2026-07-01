@@ -169,7 +169,7 @@ router.get('/backup/export', requireRole('admin'), async (req, res) => {
 
   res.json({
     backupType: 'pocket-champion-build-backup',
-    version: '2.8',
+    version: '2.13',
     exportedAt: new Date().toISOString(),
     note: 'File này dùng để khôi phục tên linh thú và bài build. Không chứa mật khẩu gốc.',
     counts: {
@@ -181,6 +181,9 @@ router.get('/backup/export', requireRole('admin'), async (req, res) => {
     creatures: creatures.map(creature => ({
       name: creature.name,
       key: creature.key,
+      generation: creature.generation || null,
+      source: creature.source || 'custom',
+      suggestedSkills: Array.isArray(creature.suggestedSkills) ? creature.suggestedSkills : [],
       createdAt: creature.createdAt,
       updatedAt: creature.updatedAt
     })),
@@ -228,11 +231,16 @@ router.post('/backup/import', requireRole('admin'), async (req, res) => {
         const name = normalizeCreatureName(item?.name || item);
         if (!name) continue;
         const key = creatureKey(name);
+        const set = { updatedBy: req.user._id };
+        if (Number(item?.generation || 0)) set.generation = Number(item.generation);
+        if (item?.source) set.source = String(item.source).slice(0, 80);
+        if (Array.isArray(item?.suggestedSkills)) set.suggestedSkills = item.suggestedSkills.map(skill => String(skill || '').trim()).filter(Boolean).slice(0, 500);
+
         const result = await Creature.updateOne(
           { key },
           {
             $setOnInsert: { name, key, createdBy: req.user._id },
-            $set: { updatedBy: req.user._id }
+            $set: set
           },
           { upsert: true }
         );
