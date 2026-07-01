@@ -2,11 +2,11 @@
 // Cấu hình chữ hiển thị chính của web.
 // Muốn đổi tiêu đề/mô tả thì sửa các dòng bên dưới rồi push lên GitHub.
 window.POCKET_CHAMPION_TEXT = {
-  documentTitle: 'POCKET CHAMPION - Tra cứu build',
-  authTitle: 'Tra cứu build linh thú online',
-  authSubtitle: 'Đăng nhập hoặc tự tạo tài khoản để tra cứu. Tài khoản mới mặc định là user; Cameo/mod/admin được build và chỉ sửa build của mình, riêng admin toàn quyền.',
+  documentTitle: 'POCKET CHAMPION',
+  authTitle: 'Tra cứu build POKEMON',
+  authSubtitle: 'Đăng nhập hoặc tự tạo tài khoản để tra cứu. Tài khoản mới mặc định là user.',
   heroTitle: 'Tra cứu build linh thú',
-  heroSubtitle: 'Admin/mod có thể thêm tên linh thú. Cameo/mod/admin search tên rồi bấm Build để tạo cách build riêng; link linh thú có thể share trực tiếp.'
+  heroSubtitle: 'Admin/mod có thể thêm tên linh thú.'
 };
 
 // Cấu hình các link chính thức của web POCKET CHAMPION.
@@ -17,21 +17,21 @@ window.POCKET_CHAMPION_LINKS = [
   {
     id: 'download',
     label: 'Tải game',
-    url: '',
+    url: 'https://hk.qu06.cn/gtpcsc/?ddAaGEae',
     description: 'Link tải game POCKET CHAMPION',
     icon: '🎮'
   },
   {
     id: 'tiktok',
     label: 'TikTok',
-    url: '',
+    url: 'https://www.tiktok.com/@mewthree223?_r=1&_t=ZS-97fbZahpPO8',
     description: 'Kênh TikTok của bạn',
     icon: '🎵'
   },
   {
     id: 'facebook',
     label: 'Nhóm Facebook',
-    url: '',
+    url: 'https://www.facebook.com/share/g/15wXVYVakkd/',
     description: 'Nhóm cộng đồng game',
     icon: '👥'
   }
