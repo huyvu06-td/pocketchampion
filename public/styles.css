@@ -2054,18 +2054,18 @@ body {
 .role-pill {
   display: inline-flex !important;
   align-items: center;
-  justify-content: center;
-  gap: 6px;
+  justify-content: flex-start;
+  gap: 5px;
   width: fit-content;
-  border: 1px solid color-mix(in srgb, var(--role-color) 52%, transparent);
-  background: color-mix(in srgb, var(--role-color) 16%, rgba(255,255,255,0.05));
+  border: 0;
+  background: transparent;
   color: var(--role-color);
-  border-radius: 999px;
-  padding: 5px 9px;
+  border-radius: 0;
+  padding: 0;
   font-weight: 850;
-  font-size: 0.78rem;
-  line-height: 1;
-  box-shadow: 0 8px 24px color-mix(in srgb, var(--role-color) 13%, transparent);
+  font-size: 0.8rem;
+  line-height: 1.15;
+  box-shadow: none;
 }
 
 .role-logo {
@@ -2137,4 +2137,18 @@ body {
   .role-setting-actions {
     justify-content: flex-start;
   }
+}
+
+
+/* v2.24: bỏ khung role trong danh sách mod/bảng xếp hạng để giao diện gọn hơn. */
+.mod-item .role-pill,
+.leaderboard-row .role-pill {
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+.mod-item .role-pill {
+  margin-top: 2px;
 }

@@ -6,21 +6,21 @@ window.POCKET_CHAMPION_LINKS = [
   {
     id: 'download',
     label: 'Tải game',
-    url: 'https://hk.qu06.cn/gtpcsc/?ddAaGEae',
+    url: '',
     description: 'Link tải game POCKET CHAMPION',
     icon: '🎮'
   },
   {
     id: 'tiktok',
     label: 'TikTok',
-    url: 'https://www.tiktok.com/@mewthree223?_r=1&_t=ZS-97fbZahpPO8',
+    url: '',
     description: 'Kênh TikTok của bạn',
     icon: '🎵'
   },
   {
     id: 'facebook',
     label: 'Nhóm Facebook',
-    url: 'https://www.facebook.com/share/g/15wXVYVakkd/',
+    url: '',
     description: 'Nhóm cộng đồng game',
     icon: '👥'
   }

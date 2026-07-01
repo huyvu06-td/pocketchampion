@@ -38,13 +38,17 @@ router.get('/mods', async (req, res) => {
 
 router.get('/:id/builds', async (req, res) => {
   if (!mongoose.isValidObjectId(req.params.id)) {
-    return res.status(404).json({ message: 'Không tìm thấy mod/admin này.' });
-  }
-  const user = await User.findById(req.params.id);
-  if (!user || !['cameo', 'mod', 'admin'].includes(baseRoleForUser(user))) {
-    return res.status(404).json({ message: 'Không tìm thấy mod/admin này.' });
+    return res.status(404).json({ message: 'Không tìm thấy người build này.' });
   }
 
+  const user = await User.findById(req.params.id);
+  if (!user) {
+    return res.status(404).json({ message: 'Không tìm thấy người build này.' });
+  }
+
+  // v2.24: Cho phép mở trang người build theo id từ bảng xếp hạng/danh sách mod.
+  // Một số tài khoản dùng custom role có baseRole lưu cũ, nên không chặn cứng
+  // theo baseRole ở endpoint này nữa. Danh sách hiển thị công khai vẫn được lọc ở /mods.
   const builds = await Beast.find({ createdBy: user._id })
     .populate('creature')
     .populate('createdBy', 'username displayName gameName role roleBase avatarData')
