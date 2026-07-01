@@ -160,6 +160,7 @@ init();
 
 function init() {
   wireEvents();
+  renderSiteTexts();
   renderOfficialLinks();
   loadDonationPublic();
   restoreSession();
@@ -438,6 +439,28 @@ function renderRoleSelectOptions() {
     `<option value="${escapeAttr(role.key)}">${escapeHtml((role.logo || '') + ' ' + (role.name || role.key))}</option>`
   ).join('');
   if (el.newRole) el.newRole.innerHTML = options;
+}
+
+
+function renderSiteTexts() {
+  const config = window.POCKET_CHAMPION_TEXT || {};
+  const mappings = [
+    ['authTitle', '#authTitle', 'Tra cứu build linh thú online'],
+    ['authSubtitle', '#authSubtitle', 'Đăng nhập hoặc tự tạo tài khoản để tra cứu. Tài khoản mới mặc định là user; Cameo/mod/admin được build và chỉ sửa build của mình, riêng admin toàn quyền.'],
+    ['heroTitle', '#heroTitle', 'Tra cứu build linh thú'],
+    ['heroSubtitle', '#heroSubtitle', 'Admin/mod có thể thêm tên linh thú. Cameo/mod/admin search tên rồi bấm Build để tạo cách build riêng; link linh thú có thể share trực tiếp.']
+  ];
+
+  if (config.documentTitle) {
+    document.title = String(config.documentTitle);
+  }
+
+  mappings.forEach(([key, selector, fallback]) => {
+    const node = document.querySelector(selector);
+    if (node) {
+      node.textContent = String(config[key] || fallback);
+    }
+  });
 }
 
 function getOfficialLinks() {

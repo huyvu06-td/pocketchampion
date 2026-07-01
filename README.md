@@ -1,4 +1,4 @@
-# POCKET CHAMPION online v2.25
+# POCKET CHAMPION online v2.26
 
 Bản này chỉnh giao diện tra cứu:
 
@@ -290,3 +290,20 @@ Nguồn dữ liệu tên Pokémon tiến hóa cuối và move name được lấ
 - Admin/mod/cameo có màu tên và logo role riêng.
 - Admin có mục Custom role trong Quản lý tài khoản để chỉnh tên role, màu role, logo role và quyền nền.
 - Role custom có thể dùng quyền nền user / Cameo / mod / admin để dễ tùy biến sau này.
+
+
+## v2.26 - Cấu hình tiêu đề/mô tả trang đăng nhập
+
+Có thể đổi tiêu đề và mô tả ở màn hình đăng nhập/trang chính trong file `public/site-config.js`:
+
+```js
+window.POCKET_CHAMPION_TEXT = {
+  documentTitle: 'POCKET CHAMPION - Tra cứu build',
+  authTitle: 'Tra cứu build linh thú online',
+  authSubtitle: 'Đăng nhập hoặc tự tạo tài khoản để tra cứu...',
+  heroTitle: 'Tra cứu build linh thú',
+  heroSubtitle: 'Admin/mod có thể thêm tên linh thú...'
+};
+```
+
+Sửa chữ xong thì push lên GitHub, Render sẽ deploy lại.
