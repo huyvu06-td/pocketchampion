@@ -6,7 +6,7 @@ window.POCKET_CHAMPION_LINKS = [
   {
     id: 'download',
     label: 'Tải game',
-    url: '',
+    url: 'https://hk.qu06.cn/gtpcsc/?ddAaGEae',
     description: 'Link tải game POCKET CHAMPION',
     icon: '🎮'
   },
@@ -20,7 +20,7 @@ window.POCKET_CHAMPION_LINKS = [
   {
     id: 'facebook',
     label: 'Nhóm Facebook',
-    url: '',
+    url: 'https://www.facebook.com/groups/2768390113531170',
     description: 'Nhóm cộng đồng game',
     icon: '👥'
   }
