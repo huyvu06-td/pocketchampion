@@ -360,8 +360,16 @@ function isUsableExternalUrl(url = '') {
   return /^https?:\/\//i.test(String(url || '').trim());
 }
 
+function removeSidebarOfficialLinks() {
+  document.querySelectorAll('.sidebar [data-official-links], .sidebar .official-links-block, .sidebar .official-box, .sidebar-links').forEach(node => {
+    const wrapper = node.closest('.official-links-block, .official-box, .sidebar-links') || node;
+    wrapper.remove();
+  });
+}
+
 function renderOfficialLinks() {
-  const containers = document.querySelectorAll('[data-official-links]');
+  removeSidebarOfficialLinks();
+  const containers = Array.from(document.querySelectorAll('[data-official-links]')).filter(container => !container.closest('.sidebar'));
   const links = getOfficialLinks();
   containers.forEach(container => {
     container.innerHTML = links.map(link => {

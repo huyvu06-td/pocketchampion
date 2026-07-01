@@ -1,6 +1,15 @@
+# POCKET CHAMPION online v2.22
+
+Bản này bỏ hẳn khối **Liên kết chính thức** bị trùng trong sidebar. Link chỉ còn ở phía trên trang và màn hình đăng nhập.
+
+Ngoài ra đã thêm cache-busting cho CSS/JS để trình duyệt không giữ giao diện cũ.
+
 # POCKET CHAMPION - Linh Thú Online
 
-## Bản v2.19 mới
+## Bản v2.20 mới
+
+- Bỏ khối **Liên kết chính thức** trong sidebar bên trái vì phía trên đã có các nút Tải game / TikTok / Nhóm Facebook.
+- Giữ lại các link chính thức ở phần đầu trang và màn hình đăng nhập.
 
 - Đổi form build từ **6 ô Skill** sang **4 ô Skill**.
 - Bật lại autocomplete/gợi ý skill trong 4 ô Skill, dựa trên danh sách move của Pokémon đang build.
@@ -39,7 +48,7 @@ Bản online có:
 - Nhiều Cameo/mod/admin có thể cùng build một linh thú đã được admin thêm tên. Ví dụ `Pikachu` có thể có build của Mod A và build của Mod B.
 - Mỗi build hiển thị rõ **người build**.
 - Có bảng **Danh sách người build** công khai để mọi người thấy avatar, tên trong game, quyền và số build của từng mod/admin.
-- Có khu **Liên kết chính thức** hiển thị nổi bật ở màn hình đăng nhập, đầu trang và thanh bên: link tải game, TikTok, Facebook nhóm game.
+- Có khu **Liên kết chính thức** hiển thị nổi bật ở màn hình đăng nhập và đầu trang: link tải game, TikTok, Facebook nhóm game.
 - Admin có thể nhập/sửa `Tên trong game` trong phần **Quản lý tài khoản**.
 - Cameo/mod/admin có thể tự đổi avatar. Ảnh sẽ được resize còn 128×128 và backend giới hạn dưới 40KB/avatar để web nhẹ kể cả khi có nhiều mod.
 - Mật khẩu được giới hạn 6–32 ký tự. Lưu ý: database chỉ lưu hash bcrypt, nên giới hạn này chủ yếu để dễ quản lý và an toàn, không phải vì mật khẩu dài làm tốn nhiều dung lượng.
@@ -251,3 +260,13 @@ Nguồn dữ liệu tên Pokémon tiến hóa cuối và move name được lấ
 - Chỉ còn **4 ô Skill** trong form build và trang xem build.
 - 4 ô Skill có `autocomplete`/gợi ý move name theo Pokémon đang được chọn.
 - Backend cũng giới hạn mỗi build tối đa 4 skill để dữ liệu đồng bộ.
+
+## v2.21
+
+- Tối ưu bố cục mobile.
+- Header gọn hơn trên điện thoại.
+- Các nút chức năng ở đầu trang chuyển thành thanh cuộn ngang để không chiếm quá nhiều chiều cao.
+- Sidebar, danh sách Pokémon, danh sách mod và khung build được giảm padding/bo góc để dễ đọc trên màn hình nhỏ.
+- Form build/dialog dễ thao tác hơn trên mobile; nút lưu/hủy dính dưới màn hình khi đang nhập.
+- Berry/stat editor hiển thị 2 cột trên điện thoại, 1 cột trên màn hình rất nhỏ.
+

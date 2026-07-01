@@ -32,7 +32,13 @@ if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 24) {
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(compression());
 app.use(express.json({ limit: '8mb' }));
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public'), {
+  setHeaders(res, filePath) {
+    if (/\.(html|js|css)$/i.test(filePath)) {
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    }
+  }
+}));
 
 app.get('/api/health', (req, res) => {
   res.json({ ok: true, app: 'Pocket Champion Linh Thu Online' });

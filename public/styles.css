@@ -1619,3 +1619,419 @@ textarea#bulkCreatureNames {
     grid-template-columns: 1fr;
   }
 }
+
+/* v2.21: bố cục mobile gọn hơn */
+html {
+  scroll-padding-top: 12px;
+}
+
+body {
+  overflow-x: hidden;
+}
+
+@media (max-width: 860px) {
+  .hero {
+    padding: 20px 12px 12px;
+    gap: 14px;
+  }
+
+  .hero > div:first-child {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .hero h1 {
+    font-size: clamp(2.2rem, 12vw, 3.3rem);
+    line-height: 0.92;
+  }
+
+  .subtitle {
+    margin-top: 10px;
+    font-size: 0.92rem;
+    line-height: 1.45;
+  }
+
+  .hero-links.official-links {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .hero-links .official-link {
+    width: 100%;
+    min-height: 44px;
+    padding: 8px 10px;
+    border-radius: 14px;
+  }
+
+  .hero-links .official-link small {
+    display: none;
+  }
+
+  .official-icon {
+    width: 26px;
+    height: 26px;
+  }
+
+  .official-link strong {
+    font-size: 0.84rem;
+  }
+
+  .hero-actions {
+    width: 100%;
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .hero-actions > * {
+    flex: 0 0 auto;
+    width: auto !important;
+    white-space: nowrap;
+    scroll-snap-align: start;
+  }
+
+  .hero-actions .primary,
+  .hero-actions .ghost,
+  .hero-actions .donate-button,
+  .hero-actions label {
+    min-height: 42px;
+    padding: 10px 12px;
+  }
+
+  .user-mini {
+    width: auto !important;
+    max-width: 82vw;
+    justify-content: flex-start;
+  }
+
+  .user-badge {
+    max-width: 68vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .layout {
+    padding: 0 12px 32px;
+    gap: 12px;
+  }
+
+  .sidebar,
+  .detail-panel {
+    border-radius: 18px;
+    box-shadow: none;
+  }
+
+  .sidebar {
+    padding: 14px;
+    max-height: none;
+  }
+
+  .search-box label {
+    font-size: 0.88rem;
+    line-height: 1.35;
+  }
+
+  .mod-board {
+    margin: 12px 0;
+    padding: 12px;
+  }
+
+  .pet-card {
+    padding: 13px;
+    border-radius: 15px;
+  }
+
+  .detail-panel {
+    min-height: 260px;
+    padding: 14px;
+  }
+
+  .empty-state {
+    min-height: 280px;
+    padding: 18px;
+  }
+
+  .detail,
+  .selected-build-view {
+    gap: 14px;
+  }
+
+  .detail-head,
+  .creature-head,
+  .build-head {
+    gap: 12px;
+  }
+
+  .detail-actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .detail-actions .primary,
+  .detail-actions .ghost {
+    width: 100%;
+  }
+
+  .creature-head h2,
+  .build-head h2,
+  .detail-title h2 {
+    font-size: clamp(1.9rem, 10vw, 2.55rem);
+  }
+
+  .content-section,
+  .info-box,
+  .section-card {
+    padding: 13px;
+    border-radius: 15px;
+  }
+
+  .build-card {
+    padding: 12px;
+    border-radius: 15px;
+  }
+
+  .build-card-main {
+    align-items: flex-start;
+  }
+
+  .build-card-side {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+  }
+}
+
+@media (max-width: 640px) {
+  .hero {
+    padding-top: 16px;
+  }
+
+  .eyebrow {
+    font-size: 0.66rem;
+  }
+
+  .hero h1 {
+    font-size: clamp(2.1rem, 13vw, 3rem);
+  }
+
+  .hero-links.official-links {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-links .official-link {
+    width: 100%;
+  }
+
+  .layout {
+    padding: 0 10px 28px;
+  }
+
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+    padding: 11px 12px;
+  }
+
+  .stats-editor {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .stat-grid .stat-row {
+    grid-template-columns: 1fr;
+  }
+
+  .stat-row {
+    grid-template-columns: 44px 1fr 38px;
+  }
+
+  .skill-card {
+    grid-template-columns: 30px minmax(0, 1fr);
+    padding: 11px;
+  }
+
+  .skill-card > span {
+    width: 26px;
+    height: 26px;
+  }
+
+  .grid.two,
+  .grid.four,
+  .grid.five {
+    grid-template-columns: 1fr !important;
+  }
+
+  .dialog {
+    width: calc(100vw - 14px);
+    max-height: calc(100dvh - 14px);
+    border-radius: 20px;
+  }
+
+  .dialog form,
+  .users-dialog > div,
+  .users-dialog .create-user-form,
+  .table-wrap,
+  .donate-body {
+    padding: 14px;
+  }
+
+  .dialog-head {
+    align-items: center;
+    padding: 14px;
+  }
+
+  .dialog-head h2 {
+    font-size: 1.3rem;
+  }
+
+  .dialog-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin: 14px -14px -14px;
+    padding: 12px 14px;
+    border-top: 1px solid var(--line);
+    background: rgba(17, 26, 48, 0.96);
+  }
+
+  .dialog-actions .spacer {
+    display: none;
+  }
+
+  .dialog-actions .primary,
+  .dialog-actions .ghost {
+    width: 100%;
+  }
+
+  .dialog-actions #btnDelete {
+    grid-column: 1 / -1;
+  }
+
+  .auth-screen {
+    padding: 12px;
+  }
+
+  .auth-card {
+    padding: 20px;
+    border-radius: 22px;
+  }
+
+  .auth-card h1 {
+    font-size: 2.2rem;
+  }
+
+  .auth-tabs {
+    margin: 18px 0;
+  }
+
+  .home-leaderboard {
+    margin-top: 16px;
+  }
+
+  .leaderboard-card {
+    padding: 14px;
+  }
+
+  .leaderboard-row {
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 9px;
+  }
+
+  .leaderboard-row .avatar {
+    display: none;
+  }
+
+  .leaderboard-row .badge {
+    grid-column: 2;
+    width: max-content;
+  }
+
+  .builder-build-card {
+    padding: 12px;
+  }
+
+  .mod-item {
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .mod-item .rank-number {
+    min-width: auto;
+  }
+
+  .mod-item .badge {
+    grid-column: 1 / -1;
+    justify-self: flex-start;
+  }
+
+  .section-title {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+  }
+
+  .section-title.compact p {
+    text-align: left;
+  }
+
+  .admin-table-toolbar {
+    padding: 12px;
+  }
+
+  .admin-table-toolbar button,
+  .copy-line button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 420px) {
+  .hero h1 {
+    font-size: 2.15rem;
+  }
+
+  .primary,
+  .ghost,
+  .donate-button {
+    font-size: 0.92rem;
+  }
+
+  .stats-editor {
+    grid-template-columns: 1fr !important;
+  }
+
+  .user-badge {
+    max-width: 72vw;
+  }
+
+  .build-card-main {
+    gap: 10px;
+  }
+
+  .badge {
+    font-size: 0.74rem;
+  }
+
+  .pet-meta {
+    gap: 5px;
+  }
+}
+
+
+/* v2.22: Không hiển thị khối Liên kết chính thức trong sidebar vì đã có ở đầu trang. */
+.sidebar .official-links-block,
+.sidebar .official-box,
+.sidebar .sidebar-links,
+.sidebar [data-official-links] {
+  display: none !important;
+}
