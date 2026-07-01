@@ -1,4 +1,5 @@
 const MAX_TOTAL_STATS = 510;
+const SKILL_SLOT_COUNT = 4;
 const STAT_KEYS = ['hp', 'atk', 'satk', 'def', 'sdef', 'spe'];
 const STAT_LABELS = {
   hp: 'HP',
@@ -93,6 +94,7 @@ const el = {
   btnClearDonateImage: document.querySelector('#btnClearDonateImage'),
   searchInput: document.querySelector('#searchInput'),
   creatureSuggestions: document.querySelector('#creatureSuggestions'),
+  skillSuggestions: document.querySelector('#skillSuggestions'),
   homeLeaderboard: document.querySelector('#homeLeaderboard'),
   roleFilter: document.querySelector('#roleFilter'),
   modList: document.querySelector('#modList'),
@@ -113,7 +115,6 @@ const el = {
   nature: document.querySelector('#nature'),
   passive: document.querySelector('#passive'),
   skillsWrap: document.querySelector('#skillsWrap'),
-  skillSuggestions: document.querySelector('#skillSuggestions'),
   hp: document.querySelector('#hp'),
   atk: document.querySelector('#atk'),
   satk: document.querySelector('#satk'),
@@ -697,6 +698,7 @@ async function goHome() {
   selectedBuilder = null;
   selectedBuilds = [];
   selectedBuildId = '';
+  renderSkillSuggestions();
   if (el.searchInput) el.searchInput.value = '';
   if (el.roleFilter) el.roleFilter.value = '';
   setRoute('', '', false);
@@ -847,32 +849,17 @@ function renderCreatureSuggestions() {
     .join('');
 }
 
-function renderSkillSuggestions(skills = []) {
+function renderSkillSuggestions() {
   if (!el.skillSuggestions) return;
-  const uniqueSkills = [...new Set((Array.isArray(skills) ? skills : []).map(skill => String(skill || '').trim()).filter(Boolean))];
+  const skills = Array.isArray(selectedCreature?.suggestedSkills) ? selectedCreature.suggestedSkills : [];
+  const uniqueSkills = [...new Set(skills.map(skill => String(skill || '').trim()).filter(Boolean))].slice(0, 500);
   el.skillSuggestions.innerHTML = uniqueSkills
-    .slice(0, 500)
     .map(skill => `<option value="${escapeAttr(skill)}"></option>`)
     .join('');
 }
 
-function skillPoolHtml(skills = []) {
-  const uniqueSkills = [...new Set((Array.isArray(skills) ? skills : []).map(skill => String(skill || '').trim()).filter(Boolean))];
-  if (!uniqueSkills.length) return '';
-  return `
-    <section class="form-section creature-skill-pool">
-      <div class="section-title">
-        <h3>Skill gợi ý của Pokémon tiến hóa cuối</h3>
-        <p>Có ${uniqueSkills.length} tên skill để chọn khi build. Chỉ lưu tên skill, không cần mô tả chiêu thức.</p>
-      </div>
-      <details>
-        <summary>Xem danh sách skill</summary>
-        <div class="skill-chip-grid">
-          ${uniqueSkills.map(skill => `<button class="skill-chip" data-skill="${escapeAttr(skill)}" type="button">${escapeHtml(skill)}</button>`).join('')}
-        </div>
-      </details>
-    </section>
-  `;
+function skillPoolHtml() {
+  return '';
 }
 
 async function selectCreatureFromTypedName() {
@@ -912,6 +899,7 @@ async function applyRouteFromUrl(updateUrl = false) {
     selectedBuilds = [];
     selectedBuildId = null;
     renderList();
+    renderSkillSuggestions();
     renderDetail();
   }
 }
@@ -932,6 +920,7 @@ async function selectCreature(creatureId, buildId = '', updateUrl = true) {
 
     if (updateUrl) setRoute(selectedCreature.id, selectedBuildId);
     renderList();
+    renderSkillSuggestions();
     renderDetail();
   } catch (error) {
     showToast(error.message, 'error');
@@ -945,6 +934,7 @@ async function selectBuilder(userId) {
     selectedCreature = null;
     selectedBuilds = data.builds || [];
     selectedBuildId = '';
+    renderSkillSuggestions();
     setRoute('', '', false);
     renderList();
     renderDetail();
@@ -1051,8 +1041,6 @@ function renderDetail() {
       </div>
     </div>
 
-    ${skillPoolHtml(selectedCreature.suggestedSkills)}
-
     <section class="form-section">
       <div class="section-title">
         <h3>Các bài build của Cameo/mod/admin</h3>
@@ -1085,9 +1073,6 @@ function renderDetail() {
     });
   });
 
-  document.querySelectorAll('.skill-chip').forEach(button => {
-    button.addEventListener('click', () => copyText(button.dataset.skill || '', 'Đã copy tên skill.'));
-  });
 
   const copyBuildButton = document.querySelector('#btnCopyBuild');
   if (copyBuildButton && selectedBuild) copyBuildButton.addEventListener('click', () => copyBuild(selectedBuild));
@@ -1116,9 +1101,9 @@ function buildCardHtml(build) {
   `;
 }
 
-function sixSkillSlots(skills = []) {
+function skillSlots(skills = []) {
   const cleaned = Array.isArray(skills) ? skills : [];
-  return Array.from({ length: 6 }, (_, index) => {
+  return Array.from({ length: SKILL_SLOT_COUNT }, (_, index) => {
     const skill = cleaned[index];
     if (typeof skill === 'string') return { name: skill };
     return { name: skill?.name || '' };
@@ -1158,7 +1143,7 @@ function buildDetailHtml(build) {
     <section class="content-section">
       <h3>Kỹ năng (Skills)</h3>
       <div class="skill-list">
-        ${sixSkillSlots(build.skills).map((skill, index) => {
+        ${skillSlots(build.skills).map((skill, index) => {
           const hasContent = Boolean((skill.name || '').trim());
           return `
             <div class="skill-card ${hasContent ? '' : 'empty'}">
@@ -1204,10 +1189,10 @@ function openBuildDialog(build = null) {
   el.skillsWrap.innerHTML = '';
 
   const creature = build?.creature || selectedCreature;
-  renderSkillSuggestions((selectedCreature && selectedCreature.id === (creature?.id || selectedCreature?.id)) ? selectedCreature.suggestedSkills : []);
   el.petId.value = build?.id || '';
   el.creatureId.value = creature?.id || selectedCreature?.id || '';
   el.name.value = creature?.name || selectedCreature?.name || build?.name || '';
+  renderSkillSuggestions();
 
   if (build) {
     el.dialogTitle.textContent = 'Sửa build linh thú';
@@ -1216,28 +1201,28 @@ function openBuildDialog(build = null) {
     el.passive.value = build.passive || '';
     el.notes.value = build.notes || '';
     STAT_KEYS.forEach(key => { el[key].value = build.stats?.[key] || 0; });
-    sixSkillSlots(build.skills).forEach((skill, index) => addSkillRow(skill, index));
+    skillSlots(build.skills).forEach((skill, index) => addSkillRow(skill, index));
     el.btnDelete.classList.toggle('hidden', !build.canDelete);
   } else {
     el.dialogTitle.textContent = `Build ${selectedCreature.name}`;
     STAT_KEYS.forEach(key => { el[key].value = 0; });
-    sixSkillSlots().forEach((skill, index) => addSkillRow(skill, index));
+    skillSlots().forEach((skill, index) => addSkillRow(skill, index));
     el.btnDelete.classList.add('hidden');
   }
 
-  while (el.skillsWrap.children.length < 6) addSkillRow({ name: '' }, el.skillsWrap.children.length);
+  while (el.skillsWrap.children.length < SKILL_SLOT_COUNT) addSkillRow({ name: '' }, el.skillsWrap.children.length);
   updateStatPreview();
   el.dialog.showModal();
 }
 
 function addSkillRow(skill = { name: '' }, index = el.skillsWrap.children.length) {
-  if (el.skillsWrap.children.length >= 6) return;
+  if (el.skillsWrap.children.length >= SKILL_SLOT_COUNT) return;
   const slotNumber = Number(index) + 1;
   const row = document.createElement('div');
   row.className = 'skill-row fixed-skill-row';
   row.innerHTML = `
     <span class="skill-slot-label">Skill ${slotNumber}</span>
-    <input class="skill-name" list="skillSuggestions" placeholder="Tên skill ${slotNumber}" value="${escapeAttr(skill.name || '')}" />
+    <input class="skill-name" list="skillSuggestions" placeholder="Tên skill ${slotNumber}" value="${escapeAttr(skill.name || '')}" autocomplete="off" />
   `;
   el.skillsWrap.appendChild(row);
 }
@@ -1341,7 +1326,7 @@ function copyBuild(build) {
     `Tính cách (Nature): ${build.nature || 'Chưa nhập'}`,
     `Nội tại (Ability): ${build.passive || 'Chưa nhập'}`,
     'Kỹ năng (Skills):',
-    ...sixSkillSlots(build.skills).map((skill, index) => `${index + 1}. ${skill.name || 'Chưa nhập'}`),
+    ...skillSlots(build.skills).map((skill, index) => `${index + 1}. ${skill.name || 'Chưa nhập'}`),
     `Berry / Chỉ số 510 điểm: ${STAT_KEYS.map(key => `${STAT_LABELS[key]} ${build.stats?.[key] || 0}`).join(' / ')}`,
     `Ghi chú (Notes): ${build.notes || 'Không có'}`
   ];

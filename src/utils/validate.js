@@ -36,8 +36,8 @@ function normalizeSkills(skills = []) {
   if (cleaned.length < 1) {
     throw new Error('Cần nhập ít nhất 1 kỹ năng (Skill).');
   }
-  if (cleaned.length > 6) {
-    throw new Error('Mỗi build chỉ có tối đa 6 kỹ năng (Skills).');
+  if (cleaned.length > 4) {
+    throw new Error('Mỗi build chỉ có tối đa 4 kỹ năng (Skills).');
   }
   return cleaned;
 }

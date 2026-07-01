@@ -77,7 +77,7 @@ function buildBackupJSON(build) {
     role: build.role || 'Khác',
     nature: build.nature || '',
     passive: build.passive || '',
-    skills: build.skills || [],
+    skills: Array.isArray(build.skills) ? build.skills.slice(0, 4) : [],
     stats: build.stats || {},
     notes: build.notes || '',
     builderUsername: createdBy?.username || '',
@@ -182,7 +182,7 @@ router.get('/backup/export', requireRole('admin'), async (req, res) => {
 
   res.json({
     backupType: 'pocket-champion-build-backup',
-    version: '2.17',
+    version: '2.19',
     exportedAt: new Date().toISOString(),
     note: 'File này dùng để khôi phục tên linh thú, bài build và ảnh đội hình gợi ý. Không chứa mật khẩu gốc.',
     counts: {
@@ -273,7 +273,11 @@ router.post('/backup/import', requireRole('admin'), async (req, res) => {
       try {
         const creatureName = item.creatureName || item.name || item.creature?.name;
         const creature = await upsertCreatureForBackup(creatureName, req.user);
-        const payload = normalizeBeastPayload({ ...item, name: creature.name });
+        const payload = normalizeBeastPayload({
+          ...item,
+          name: creature.name,
+          skills: Array.isArray(item.skills) ? item.skills.slice(0, 4) : item.skills
+        });
         const username = item.builderUsername || item.createdBy?.username || item.createdByUsername || '';
         let owner = username ? builderMap.get(username) || await User.findOne({ username: safeUsername(username) }) : null;
         if (!owner && username) {
@@ -432,7 +436,11 @@ router.post('/bulk/import', requireRole('cameo', 'mod', 'admin'), async (req, re
     for (const [index, item] of items.entries()) {
       try {
         const creature = await findOrCreateCreatureByName(item.name, req.user);
-        const payload = normalizeBeastPayload({ ...item, name: creature.name });
+        const payload = normalizeBeastPayload({
+          ...item,
+          name: creature.name,
+          skills: Array.isArray(item.skills) ? item.skills.slice(0, 4) : item.skills
+        });
         const existing = await Beast.findOne({ creature: creature._id, createdBy: req.user._id });
         if (existing) {
           Object.assign(existing, payload, { creature: creature._id, name: creature.name, updatedBy: req.user._id });

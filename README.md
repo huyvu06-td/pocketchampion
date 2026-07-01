@@ -1,13 +1,17 @@
 # POCKET CHAMPION - Linh Thú Online
 
-## Bản v2.17 mới
+## Bản v2.19 mới
+
+- Đổi form build từ **6 ô Skill** sang **4 ô Skill**.
+- Bật lại autocomplete/gợi ý skill trong 4 ô Skill, dựa trên danh sách move của Pokémon đang build.
+- Vẫn không hiện hộp skill gợi ý riêng ngoài trang chi tiết; chỉ gợi ý ngay trong ô nhập skill.
 
 
 - Thêm thư mục **Đội hình gợi ý của các hệ**: admin có thể up ảnh đội hình, nhập chú thích/ghi chú; người chơi bấm vào ảnh để xem đội hình phóng to.
 - Ảnh đội hình được nén trước khi lưu: ảnh thu nhỏ dưới 80KB, ảnh xem đầy đủ dưới khoảng 520KB để web nhẹ hơn.
 - Backup JSON của admin nay có thể kèm cả ảnh đội hình gợi ý để khôi phục sau này.
 - Đã bỏ ô **Hệ / thuộc tính** trong form build và phần hiển thị build.
-- Danh sách mặc định chỉ còn Pokémon dạng tiến hóa cuối Gen 1–9, kèm gợi ý tên skill và không có mô tả skill.
+- Danh sách mặc định chỉ còn Pokémon dạng tiến hóa cuối Gen 1–9; skill chỉ nhập tên, không có mô tả và không hiện hộp gợi ý.
 
 
 
@@ -39,7 +43,7 @@ Bản online có:
 - Admin có thể nhập/sửa `Tên trong game` trong phần **Quản lý tài khoản**.
 - Cameo/mod/admin có thể tự đổi avatar. Ảnh sẽ được resize còn 128×128 và backend giới hạn dưới 40KB/avatar để web nhẹ kể cả khi có nhiều mod.
 - Mật khẩu được giới hạn 6–32 ký tự. Lưu ý: database chỉ lưu hash bcrypt, nên giới hạn này chủ yếu để dễ quản lý và an toàn, không phải vì mật khẩu dài làm tốn nhiều dung lượng.
-- Mỗi linh thú có tên, vai trò, tính cách, nội tại, 1–6 kỹ năng, ghi chú và 6 dòng chỉ số `HP / ATK / SATK / DEF / SDEF / SPE` tổng đúng 510 điểm.
+- Mỗi linh thú có tên, vai trò, tính cách, nội tại, 1–4 kỹ năng, ghi chú và 6 dòng chỉ số `HP / ATK / SATK / DEF / SDEF / SPE` tổng đúng 510 điểm.
 - Nhập / xuất JSON để backup hoặc chuyển dữ liệu từ bản cũ.
 - Donate và ảnh đội hình gợi ý được lưu trong MongoDB, không mất khi Render reload/redeploy.
 
@@ -200,8 +204,8 @@ Sau khi sửa xong, push lên GitHub. Render sẽ deploy lại và các nút lin
 ## Cập nhật v2.6
 
 - Giao diện hiển thị song ngữ cho các mục quan trọng: Nội tại (Ability), Tính cách (Nature), Kỹ năng (Skills), Berry / Chỉ số 510 điểm, Ghi chú (Notes).
-- Form build có cố định 6 ô Skill để Cameo/mod/admin điền; ô chưa dùng có thể để trống.
-- Khi bấm vào một bài build, trang chi tiết luôn hiện đủ 6 slot Skills cùng Ability, Nature, Berry và Notes.
+- Form build có cố định 4 ô Skill để Cameo/mod/admin điền; ô chưa dùng có thể để trống.
+- Khi bấm vào một bài build, trang chi tiết luôn hiện đủ 4 slot Skills cùng Ability, Nature, Berry và Notes.
 - Copy build cũng dùng nhãn song ngữ để người chơi dễ hiểu hơn.
 
 
@@ -221,9 +225,9 @@ Khuyến nghị: sau mỗi đợt thêm/sửa nhiều build, admin nên bấm **
 ## Cập nhật v2.13
 
 - Tự nhập sẵn **568 Pokémon tiến hóa cuối Gen 1-9** vào danh sách tên linh thú.
-- Mỗi Pokémon tiến hóa cuối có kèm danh sách **skill/move name** để gợi ý khi Cameo/mod/admin build.
-- Đã bỏ hoàn toàn mô tả skill; form build chỉ có 6 ô nhập **tên skill**.
-- Khi mở trang một Pokémon tiến hóa cuối, người xem có thể xem danh sách skill gợi ý và bấm vào skill để copy tên.
+- Dữ liệu vẫn có danh sách **skill/move name** nội bộ, nhưng giao diện không hiện hộp gợi ý skill riêng.
+- Đã bỏ hoàn toàn mô tả skill; form build chỉ có 4 ô nhập **tên skill**.
+- Khi mở trang một Pokémon tiến hóa cuối, người xem chỉ thấy các bài build đã được tạo, không thấy hộp skill gợi ý.
 - Admin có thêm nút **Nhập sẵn Pokémon tiến hóa cuối Gen 1-9** trong mục **Quản lý tên linh thú** để cập nhật lại danh sách bất cứ lúc nào.
 - Server sẽ tự seed Pokémon tiến hóa cuối khi khởi động nếu chưa có dữ liệu. Có thể tắt bằng biến môi trường `AUTO_SEED_POKEMON=false`.
 
@@ -240,3 +244,10 @@ Nguồn dữ liệu tên Pokémon tiến hóa cuối và move name được lấ
 - Trang chủ và danh sách bên trái chỉ hiển thị Pokémon đã có ít nhất 1 bài build.
 - User thường khi search cũng chỉ thấy Pokémon đã có build; Cameo/mod/admin vẫn search được tên chưa build để tạo build mới.
 - Thêm nút **Trang chủ** ở đầu trang để quay về màn hình chính, xóa tìm kiếm và bỏ chọn linh thú/người build.
+
+
+## Thay đổi v2.19
+
+- Chỉ còn **4 ô Skill** trong form build và trang xem build.
+- 4 ô Skill có `autocomplete`/gợi ý move name theo Pokémon đang được chọn.
+- Backend cũng giới hạn mỗi build tối đa 4 skill để dữ liệu đồng bộ.

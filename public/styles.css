@@ -1479,42 +1479,6 @@ textarea#bulkCreatureNames {
   }
 }
 
-.creature-skill-pool details {
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  padding: 12px 14px;
-  background: rgba(255, 255, 255, 0.035);
-}
-
-.creature-skill-pool summary {
-  cursor: pointer;
-  font-weight: 800;
-}
-
-.skill-chip-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  max-height: 280px;
-  overflow: auto;
-  margin-top: 12px;
-  padding-right: 4px;
-}
-
-.skill-chip {
-  border: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--text);
-  border-radius: 999px;
-  padding: 7px 10px;
-  font-size: 0.86rem;
-  cursor: pointer;
-}
-
-.skill-chip:hover {
-  border-color: rgba(125, 240, 184, 0.6);
-  background: rgba(125, 240, 184, 0.1);
-}
 
 .fixed-skill-row {
   grid-template-columns: 86px minmax(0, 1fr);
