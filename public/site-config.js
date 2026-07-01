@@ -5,7 +5,7 @@ window.POCKET_CHAMPION_TEXT = {
   documentTitle: 'POCKET CHAMPION',
   authTitle: 'Tra cứu build POKEMON',
   authSubtitle: 'Đăng nhập hoặc tự tạo tài khoản để tra cứu. Tài khoản mới mặc định là user.',
-  heroTitle: 'Tra cứu build linh thú',
+  heroTitle: 'Tra cứu build Pokemon',
   heroSubtitle: 'Admin/mod có thể thêm tên linh thú.'
 };
 
