@@ -51,10 +51,18 @@ async function buildCountMap(creatureIds = null) {
 
 router.get('/', async (req, res) => {
   const search = normalizeCreatureName(req.query.search || '');
+  const limit = Math.min(Math.max(Number(req.query.limit || 300), 1), 3000);
   const filter = search ? { name: { $regex: escapeRegex(search), $options: 'i' } } : {};
-  const creatures = await Creature.find(filter).sort({ name: 1 }).limit(300);
+  const [creatures, total] = await Promise.all([
+    Creature.find(filter).sort({ name: 1 }).limit(limit),
+    Creature.countDocuments(filter)
+  ]);
   const countMap = await buildCountMap(creatures.map(creature => creature._id));
-  res.json({ creatures: creatures.map(creature => creature.toClient(countMap.get(creature._id.toString()) || 0)) });
+  res.json({
+    total,
+    limit,
+    creatures: creatures.map(creature => creature.toClient(countMap.get(creature._id.toString()) || 0))
+  });
 });
 
 router.get('/:id', async (req, res) => {
@@ -156,6 +164,28 @@ router.patch('/:id', requireRole('admin'), async (req, res) => {
       return res.status(409).json({ message: 'Tên linh thú này đã có trong danh sách.' });
     }
     res.status(400).json({ message: error.message || 'Không thể đổi tên linh thú.' });
+  }
+});
+
+router.delete('/all', requireRole('admin'), async (req, res) => {
+  try {
+    const confirmText = String(req.body.confirmText || req.query.confirmText || '').trim().toUpperCase();
+    if (confirmText !== 'XOA TAT CA') {
+      return res.status(400).json({ message: 'Để xóa tất cả, hãy nhập chính xác: XOA TAT CA' });
+    }
+
+    const [buildResult, creatureResult] = await Promise.all([
+      Beast.deleteMany({}),
+      Creature.deleteMany({})
+    ]);
+
+    res.json({
+      message: `Đã xóa ${creatureResult.deletedCount || 0} tên linh thú và ${buildResult.deletedCount || 0} bài build.`,
+      deletedCreatures: creatureResult.deletedCount || 0,
+      deletedBuilds: buildResult.deletedCount || 0
+    });
+  } catch (error) {
+    res.status(400).json({ message: error.message || 'Không thể xóa tất cả linh thú.' });
   }
 });
 

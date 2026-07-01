@@ -81,7 +81,8 @@
       <aside class="panel sidebar">
         <div class="search-box">
           <label for="searchInput">Tìm tên linh thú</label>
-          <input id="searchInput" type="search" placeholder="Ví dụ: Mega Necrozma..." autocomplete="off" />
+          <input id="searchInput" type="search" placeholder="Ví dụ: Mega Necrozma..." autocomplete="off" list="creatureSuggestions" />
+          <datalist id="creatureSuggestions"></datalist>
         </div>
         <div class="filters">
           <select id="roleFilter" aria-label="Lọc vai trò">
@@ -112,6 +113,7 @@
         <div id="emptyState" class="empty-state">
           <h2>Chưa chọn linh thú</h2>
           <p>Hãy tìm tên linh thú trong danh sách bên trái. Mod/admin có thể bấm Build sau khi chọn linh thú.</p>
+          <section id="homeLeaderboard" class="home-leaderboard"></section>
         </div>
         <article id="detailView" class="detail hidden"></article>
       </section>
@@ -212,6 +214,14 @@
       <button type="button" id="btnCloseCreatures" class="icon-btn" aria-label="Đóng">×</button>
     </div>
 
+    <div class="admin-table-toolbar">
+      <div>
+        <strong id="creatureAdminSummary">Tổng: 0 linh thú</strong>
+        <p class="tiny-note">Bảng có số thứ tự để dễ thống kê. Xóa tất cả sẽ xóa cả tên linh thú và toàn bộ bài build.</p>
+      </div>
+      <button id="btnDeleteAllCreatures" class="danger" type="button">Xóa tất cả linh thú</button>
+    </div>
+
     <form id="createCreatureForm" class="create-user-form">
       <h3>Thêm một linh thú</h3>
       <div class="grid two">
@@ -231,8 +241,10 @@
       <table>
         <thead>
           <tr>
+            <th>STT</th>
             <th>Tên linh thú</th>
             <th>Số build</th>
+            <th>Cập nhật</th>
             <th>Thao tác</th>
           </tr>
         </thead>

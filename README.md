@@ -174,7 +174,7 @@ Sau khi sửa xong, push lên GitHub. Render sẽ deploy lại và các nút lin
 
 
 
-## Cập nhật v2.5
+## Cập nhật v2.6
 
 - Giao diện hiển thị song ngữ cho các mục quan trọng: Nội tại (Ability), Tính cách (Nature), Kỹ năng (Skills), Berry / Chỉ số 510 điểm, Ghi chú (Notes).
 - Form build có cố định 6 ô Skill để mod/admin điền; ô chưa dùng có thể để trống.

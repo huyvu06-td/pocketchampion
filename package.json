@@ -1,7 +1,7 @@
 {
   "name": "pocket-champion-linhthu-online",
-  "version": "2.5.0",
-  "description": "Web online tra cuu va quan ly build linh thu Pocket Champion voi dang nhap, phan quyen, MongoDB, avatar, danh sach ten linh thu do admin quan ly, link share tung linh thu va nhan song ngu Ability/Nature/Skills/Berry/Notes.",
+  "version": "2.6.0",
+  "description": "Web online tra cuu va quan ly build linh thu Pocket Champion voi MongoDB, phan quyen, avatar, catalog linh thu, autocomplete, leaderboard dong gop va bang quan ly linh thu.",
   "main": "server.js",
   "type": "commonjs",
   "scripts": {

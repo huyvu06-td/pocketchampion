@@ -1,4 +1,5 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const { User, USER_ROLES } = require('../models/User');
 const { Beast } = require('../models/Beast');
 const { requireAuth, requireRole } = require('../middleware/auth');
@@ -9,17 +10,46 @@ const router = express.Router();
 router.use(requireAuth);
 
 // Tất cả tài khoản đã đăng nhập đều xem được bảng mod/admin công khai.
+async function getBuildCountMap() {
+  const buildCounts = await Beast.aggregate([
+    { $match: { createdBy: { $exists: true, $ne: null } } },
+    { $group: { _id: '$createdBy', count: { $sum: 1 } } }
+  ]);
+  return new Map(buildCounts.map(item => [item._id.toString(), item.count]));
+}
+
 router.get('/mods', async (req, res) => {
-  const [mods, buildCounts] = await Promise.all([
-    User.find({ role: { $in: ['mod', 'admin'] } }).sort({ role: 1, gameName: 1, displayName: 1, username: 1 }),
-    Beast.aggregate([
-      { $match: { createdBy: { $exists: true, $ne: null } } },
-      { $group: { _id: '$createdBy', count: { $sum: 1 } } }
-    ])
+  const [mods, countMap] = await Promise.all([
+    User.find({ role: { $in: ['mod', 'admin'] } }).sort({ gameName: 1, displayName: 1, username: 1 }),
+    getBuildCountMap()
   ]);
 
-  const countMap = new Map(buildCounts.map(item => [item._id.toString(), item.count]));
-  res.json({ mods: mods.map(user => user.publicModJSON(countMap.get(user._id.toString()) || 0)) });
+  const rows = mods
+    .map(user => user.publicModJSON(countMap.get(user._id.toString()) || 0))
+    .sort((a, b) => Number(b.buildCount || 0) - Number(a.buildCount || 0) || String(a.gameName || a.displayName || a.username).localeCompare(String(b.gameName || b.displayName || b.username), 'vi'));
+
+  res.json({ mods: rows });
+});
+
+router.get('/:id/builds', async (req, res) => {
+  if (!mongoose.isValidObjectId(req.params.id)) {
+    return res.status(404).json({ message: 'Không tìm thấy mod/admin này.' });
+  }
+  const user = await User.findById(req.params.id);
+  if (!user || !['mod', 'admin'].includes(user.role)) {
+    return res.status(404).json({ message: 'Không tìm thấy mod/admin này.' });
+  }
+
+  const builds = await Beast.find({ createdBy: user._id })
+    .populate('creature')
+    .populate('createdBy', 'username displayName gameName role avatarData')
+    .populate('updatedBy', 'username displayName gameName role avatarData')
+    .sort({ name: 1, updatedAt: -1 });
+
+  res.json({
+    user: user.publicModJSON(builds.length),
+    builds: builds.map(build => build.toClient({ viewer: req.user }))
+  });
 });
 
 router.use(requireRole('admin'));

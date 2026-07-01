@@ -21,6 +21,7 @@ let selectedBuilds = [];
 let selectedBuildId = null;
 let roles = [];
 let modList = [];
+let selectedBuilder = null;
 
 const el = {
   toast: document.querySelector('#toast'),
@@ -47,6 +48,8 @@ const el = {
   importFile: document.querySelector('#importFile'),
   btnLogout: document.querySelector('#btnLogout'),
   searchInput: document.querySelector('#searchInput'),
+  creatureSuggestions: document.querySelector('#creatureSuggestions'),
+  homeLeaderboard: document.querySelector('#homeLeaderboard'),
   roleFilter: document.querySelector('#roleFilter'),
   modList: document.querySelector('#modList'),
   petList: document.querySelector('#petList'),
@@ -92,6 +95,8 @@ const el = {
   newCreatureName: document.querySelector('#newCreatureName'),
   bulkCreatureForm: document.querySelector('#bulkCreatureForm'),
   bulkCreatureNames: document.querySelector('#bulkCreatureNames'),
+  creatureAdminSummary: document.querySelector('#creatureAdminSummary'),
+  btnDeleteAllCreatures: document.querySelector('#btnDeleteAllCreatures'),
   creaturesTable: document.querySelector('#creaturesTable')
 };
 
@@ -122,6 +127,7 @@ function wireEvents() {
   el.btnExport.addEventListener('click', exportBuilds);
   el.importFile.addEventListener('change', importBuilds);
   el.searchInput.addEventListener('input', debounce(loadCreatures, 250));
+  el.searchInput.addEventListener('change', selectCreatureFromTypedName);
   el.roleFilter.addEventListener('change', renderDetail);
 
   el.form.addEventListener('submit', async event => {
@@ -151,6 +157,7 @@ function wireEvents() {
     event.preventDefault();
     await bulkCreateCreatures();
   });
+  el.btnDeleteAllCreatures.addEventListener('click', deleteAllCreatures);
 
   window.addEventListener('popstate', () => applyRouteFromUrl(false));
 }
@@ -224,6 +231,7 @@ function logout(showMessage = true) {
   selectedCreature = null;
   selectedBuilds = [];
   selectedBuildId = null;
+  selectedBuilder = null;
   localStorage.removeItem(TOKEN_KEY);
   showAuthScreen();
   if (showMessage) showToast('Đã đăng xuất.');
@@ -329,19 +337,60 @@ async function loadMods() {
 
 function renderModList() {
   if (!modList.length) {
-    el.modList.innerHTML = '<p class="muted">Chưa có mod nào.</p>';
+    el.modList.innerHTML = '<p class="muted">Chưa có mod/admin nào.</p>';
+    renderHomeLeaderboard();
     return;
   }
-  el.modList.innerHTML = modList.map(mod => `
-    <div class="mod-item">
+
+  el.modList.innerHTML = modList.map((mod, index) => `
+    <button class="mod-item mod-link" data-id="${escapeAttr(mod.id)}" type="button">
+      <span class="rank-number">#${index + 1}</span>
       ${avatarHtml(mod, 'avatar-xs')}
       <div>
         <strong>${escapeHtml(mod.gameName || mod.displayName || mod.username)}</strong>
         <span>${escapeHtml(roleLabel(mod.role))}</span>
       </div>
       <span class="badge">${Number(mod.buildCount || 0)} build</span>
-    </div>
+    </button>
   `).join('');
+
+  el.modList.querySelectorAll('.mod-link').forEach(button => {
+    button.addEventListener('click', () => selectBuilder(button.dataset.id));
+  });
+
+  renderHomeLeaderboard();
+}
+
+function renderHomeLeaderboard() {
+  if (!el.homeLeaderboard) return;
+  if (!modList.length) {
+    el.homeLeaderboard.innerHTML = '';
+    return;
+  }
+
+  const top = modList.slice(0, 10);
+  el.homeLeaderboard.innerHTML = `
+    <div class="leaderboard-card">
+      <div class="section-title compact">
+        <h3>Bảng xếp hạng đóng góp build</h3>
+        <p>Top mod/admin có nhiều bài build nhất. Bấm vào tên để xem toàn bộ linh thú người đó đã build.</p>
+      </div>
+      <div class="leaderboard-list">
+        ${top.map((mod, index) => `
+          <button class="leaderboard-row" data-id="${escapeAttr(mod.id)}" type="button">
+            <span class="rank-medal">${index + 1}</span>
+            ${avatarHtml(mod, 'avatar-sm')}
+            <span class="leaderboard-name">${escapeHtml(mod.gameName || mod.displayName || mod.username)}</span>
+            <span class="badge">${Number(mod.buildCount || 0)} build</span>
+          </button>
+        `).join('')}
+      </div>
+    </div>
+  `;
+
+  el.homeLeaderboard.querySelectorAll('.leaderboard-row').forEach(button => {
+    button.addEventListener('click', () => selectBuilder(button.dataset.id));
+  });
 }
 
 function renderRoleFilter() {
@@ -356,6 +405,7 @@ async function loadCreatures() {
     if (el.searchInput.value.trim()) params.set('search', el.searchInput.value.trim());
     const data = await api(`/api/creatures?${params.toString()}`);
     creatures = data.creatures || [];
+    renderCreatureSuggestions();
     renderList();
   } catch (error) {
     showToast(error.message, 'error');
@@ -387,6 +437,21 @@ function renderList() {
   });
 }
 
+function renderCreatureSuggestions() {
+  if (!el.creatureSuggestions) return;
+  el.creatureSuggestions.innerHTML = creatures
+    .slice(0, 80)
+    .map(creature => `<option value="${escapeAttr(creature.name)}"></option>`)
+    .join('');
+}
+
+async function selectCreatureFromTypedName() {
+  const typed = el.searchInput.value.trim().toLocaleLowerCase('vi-VN');
+  if (!typed) return;
+  const exact = creatures.find(creature => String(creature.name || '').trim().toLocaleLowerCase('vi-VN') === typed);
+  if (exact) await selectCreature(exact.id);
+}
+
 function currentRoute() {
   const params = new URLSearchParams(window.location.search);
   return {
@@ -413,6 +478,7 @@ async function applyRouteFromUrl(updateUrl = false) {
     await selectCreature(route.creatureId, route.buildId, updateUrl);
   } else {
     selectedCreature = null;
+    selectedBuilder = null;
     selectedBuilds = [];
     selectedBuildId = null;
     renderList();
@@ -424,6 +490,7 @@ async function selectCreature(creatureId, buildId = '', updateUrl = true) {
   try {
     const data = await api(`/api/creatures/${encodeURIComponent(creatureId)}`);
     selectedCreature = data.creature;
+    selectedBuilder = null;
     selectedBuilds = data.builds || [];
     selectedBuildId = buildId && selectedBuilds.some(build => build.id === buildId) ? buildId : '';
 
@@ -441,17 +508,95 @@ async function selectCreature(creatureId, buildId = '', updateUrl = true) {
   }
 }
 
+async function selectBuilder(userId) {
+  try {
+    const data = await api(`/api/users/${encodeURIComponent(userId)}/builds`);
+    selectedBuilder = data.user;
+    selectedCreature = null;
+    selectedBuilds = data.builds || [];
+    selectedBuildId = '';
+    setRoute('', '', false);
+    renderList();
+    renderDetail();
+  } catch (error) {
+    showToast(error.message, 'error');
+  }
+}
+
 function filteredBuilds() {
   const selectedRole = el.roleFilter.value;
   if (!selectedRole) return selectedBuilds;
   return selectedBuilds.filter(build => build.role === selectedRole);
 }
 
+function renderBuilderDetail() {
+  el.emptyState.classList.add('hidden');
+  el.detailView.classList.remove('hidden');
+
+  const builds = selectedBuilds || [];
+  const label = selectedBuilder?.gameName || selectedBuilder?.displayName || selectedBuilder?.username || 'Mod/Admin';
+
+  el.detailView.innerHTML = `
+    <div class="detail-head builder-page-head">
+      <div>
+        <p class="eyebrow">Người build</p>
+        <h2>${avatarHtml(selectedBuilder, 'avatar-lg')} ${escapeHtml(label)}</h2>
+        <div class="pet-meta">
+          <span class="badge strong-badge">${escapeHtml(roleLabel(selectedBuilder?.role || 'mod'))}</span>
+          <span class="badge">${Number(builds.length || selectedBuilder?.buildCount || 0)} build</span>
+        </div>
+      </div>
+      <div class="detail-actions">
+        <button id="btnBackHome" class="ghost" type="button">Về bảng xếp hạng</button>
+      </div>
+    </div>
+
+    <section class="form-section">
+      <div class="section-title">
+        <h3>Toàn bộ linh thú đã build</h3>
+        <p>Bấm vào một linh thú để mở trang linh thú đó và xem toàn bộ build của các mod/admin.</p>
+      </div>
+      <div class="builder-build-grid">
+        ${builds.length ? builds.map(build => `
+          <button class="builder-build-card" data-creature-id="${escapeAttr(build.creature?.id || '')}" data-build-id="${escapeAttr(build.id)}" type="button">
+            <div>
+              <h4>${escapeHtml(build.name)}</h4>
+              <p>${escapeHtml(build.role || 'Khác')} · ${escapeHtml(build.nature || 'Chưa nhập Nature')}</p>
+            </div>
+            <span class="badge">Berry ${Number(build.statTotal || 0)}/510</span>
+          </button>
+        `).join('') : '<p class="muted">Người này chưa có bài build nào.</p>'}
+      </div>
+    </section>
+  `;
+
+  document.querySelector('#btnBackHome')?.addEventListener('click', () => {
+    selectedBuilder = null;
+    selectedBuilds = [];
+    selectedBuildId = '';
+    renderDetail();
+  });
+
+  document.querySelectorAll('.builder-build-card').forEach(button => {
+    button.addEventListener('click', async () => {
+      const creatureId = button.dataset.creatureId;
+      const buildId = button.dataset.buildId;
+      if (!creatureId) return showToast('Build này chưa gắn với tên linh thú.', 'error');
+      await selectCreature(creatureId, buildId);
+    });
+  });
+}
+
 function renderDetail() {
   if (!selectedCreature) {
+    if (selectedBuilder) {
+      renderBuilderDetail();
+      return;
+    }
     el.emptyState.classList.remove('hidden');
     el.detailView.classList.add('hidden');
     el.detailView.innerHTML = '';
+    renderHomeLeaderboard();
     return;
   }
 
@@ -807,21 +952,29 @@ async function openCreaturesDialog() {
 }
 
 async function loadCreaturesForAdmin() {
-  const data = await api('/api/creatures');
-  renderCreaturesTable(data.creatures || []);
+  const data = await api('/api/creatures?limit=3000');
+  renderCreaturesTable(data.creatures || [], data.total || 0);
 }
 
-function renderCreaturesTable(items) {
+function renderCreaturesTable(items, total = items.length) {
+  if (el.creatureAdminSummary) {
+    const buildTotal = items.reduce((sum, item) => sum + Number(item.buildCount || 0), 0);
+    el.creatureAdminSummary.textContent = `Tổng: ${Number(total || items.length)} linh thú · ${buildTotal} build trong bảng`;
+  }
+
   if (!items.length) {
-    el.creaturesTable.innerHTML = '<tr><td colspan="3">Chưa có tên linh thú.</td></tr>';
+    el.creaturesTable.innerHTML = '<tr><td colspan="5">Chưa có tên linh thú.</td></tr>';
     return;
   }
-  el.creaturesTable.innerHTML = items.map(item => `
+  el.creaturesTable.innerHTML = items.map((item, index) => `
     <tr>
+      <td class="stt-cell">${index + 1}</td>
       <td><input class="creature-name-input" data-id="${escapeAttr(item.id)}" value="${escapeAttr(item.name)}" /></td>
-      <td>${Number(item.buildCount || 0)}</td>
+      <td><span class="badge">${Number(item.buildCount || 0)} build</span></td>
+      <td>${formatDate(item.updatedAt || item.createdAt)}</td>
       <td class="table-actions">
         <button class="ghost small save-creature" data-id="${escapeAttr(item.id)}" type="button">Lưu tên</button>
+        <button class="ghost small open-creature" data-id="${escapeAttr(item.id)}" type="button">Mở</button>
         <button class="danger ghost small delete-creature" data-id="${escapeAttr(item.id)}" ${Number(item.buildCount || 0) > 0 ? 'disabled' : ''} type="button">Xóa</button>
       </td>
     </tr>
@@ -834,6 +987,12 @@ function renderCreaturesTable(items) {
       await updateCreatureName(id, name);
     });
   });
+  el.creaturesTable.querySelectorAll('.open-creature').forEach(button => {
+    button.addEventListener('click', async () => {
+      el.creaturesDialog.close();
+      await selectCreature(button.dataset.id);
+    });
+  });
   el.creaturesTable.querySelectorAll('.delete-creature').forEach(button => {
     button.addEventListener('click', async () => {
       if (!confirm('Xóa tên linh thú này? Chỉ xóa được khi chưa có build.')) return;
@@ -841,6 +1000,7 @@ function renderCreaturesTable(items) {
     });
   });
 }
+
 
 async function createCreature() {
   try {
@@ -885,6 +1045,31 @@ async function deleteCreature(id) {
     showToast(error.message, 'error');
   }
 }
+
+async function deleteAllCreatures() {
+  if (!isAdmin()) return;
+  const firstConfirm = confirm('CẢNH BÁO: thao tác này sẽ xóa TẤT CẢ tên linh thú và TẤT CẢ bài build. Không thể hoàn tác. Bạn chắc chắn muốn tiếp tục?');
+  if (!firstConfirm) return;
+
+  const confirmText = prompt('Nhập chính xác XOA TAT CA để xác nhận xóa toàn bộ linh thú và build:');
+  if (String(confirmText || '').trim().toUpperCase() !== 'XOA TAT CA') {
+    return showToast('Đã hủy xóa tất cả.', 'error');
+  }
+
+  try {
+    const result = await api('/api/creatures/all', { method: 'DELETE', body: { confirmText: 'XOA TAT CA' } });
+    selectedCreature = null;
+    selectedBuilder = null;
+    selectedBuilds = [];
+    selectedBuildId = '';
+    showToast(result.message || 'Đã xóa tất cả linh thú.');
+    await Promise.all([loadRoles(), loadMods(), loadCreatures(), loadCreaturesForAdmin()]);
+    renderDetail();
+  } catch (error) {
+    showToast(error.message, 'error');
+  }
+}
+
 
 async function openUsersDialog() {
   if (!isAdmin()) return;
