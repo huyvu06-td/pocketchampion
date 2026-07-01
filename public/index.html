@@ -12,8 +12,8 @@
   <section id="authScreen" class="auth-screen">
     <div class="auth-card">
       <p class="eyebrow">POCKET CHAMPION</p>
-      <h1>Tra cứu build linh thú online</h1>
-      <p class="subtitle">Đăng nhập hoặc tự tạo tài khoản để tra cứu. Tài khoản mới mặc định là user; Cameo/mod/admin được build và chỉ sửa build của mình, riêng admin toàn quyền.</p>
+      <h1>Tra cứu build pokemon/h1>
+      <p class="subtitle">Đăng nhập hoặc tự tạo tài khoản để tra cứu.</p>
 
       <div class="official-links-block auth-links">
         <p class="official-links-title">Liên kết chính thức</p>
@@ -29,13 +29,13 @@
 
       <form id="loginForm" class="auth-form">
         <label>Tên đăng nhập
-          <input id="loginUsername" autocomplete="username" placeholder="vd: tu_nguyen" required />
+          <input id="loginUsername" autocomplete="username" placeholder="vd: player01" required />
         </label>
         <label>Mật khẩu
           <input id="loginPassword" type="password" autocomplete="current-password" minlength="6" maxlength="32" required />
         </label>
         <button class="primary full" type="submit">Đăng nhập</button>
-        <p class="tiny-note">Có thể tự tạo tài khoản để tra cứu. Tài khoản mới mặc định là user.</p>
+        <p class="tiny-note">Có thể tự tạo tài khoản để tra cứu.</p>
       </form>
 
       <form id="registerForm" class="auth-form hidden">
@@ -49,7 +49,7 @@
           <input id="registerPassword" type="password" autocomplete="new-password" minlength="6" maxlength="32" required />
         </label>
         <button class="primary full" type="submit">Tạo tài khoản</button>
-        <p class="tiny-note">Tài khoản mới mặc định chỉ có quyền tra cứu. Mật khẩu 6–32 ký tự. Admin có thể nâng thành Cameo/mod/admin.</p>
+        <p class="tiny-note">Tài khoản mới mặc định chỉ có quyền tra cứu. Mật khẩu 6–32 ký tự.</p>
       </form>
     </div>
   </section>
@@ -59,7 +59,7 @@
       <div>
         <p class="eyebrow">POCKET CHAMPION</p>
         <h1>Tra cứu build linh thú</h1>
-        <p class="subtitle">Admin/mod có thể thêm tên linh thú. Cameo/mod/admin search tên rồi bấm Build để tạo cách build riêng; link linh thú có thể share trực tiếp.</p>
+       
         <div class="official-links hero-links" data-official-links></div>
       </div>
       <div class="hero-actions">
@@ -87,7 +87,7 @@
       <aside class="panel sidebar">
         <div class="search-box">
           <label for="searchInput">Tìm tên linh thú</label>
-          <input id="searchInput" type="search" placeholder="Ví dụ: Mega Necrozma..." autocomplete="off" list="creatureSuggestions" />
+          <input id="searchInput" type="search" placeholder="Ví dụ: Flutter Mane..." autocomplete="off" list="creatureSuggestions" />
           <datalist id="creatureSuggestions"></datalist>
         </div>
         <div class="filters">
@@ -99,7 +99,7 @@
         <section class="mod-board">
           <div class="section-title compact">
             <h3>Danh sách mod</h3>
-            <p>Ai build sẽ hiện tên người đó.</p>
+         
           </div>
           <div id="modList" class="mod-list"></div>
         </section>
@@ -110,7 +110,7 @@
       <section class="panel detail-panel">
         <div id="emptyState" class="empty-state">
           <h2>Chưa chọn linh thú</h2>
-          <p>Hãy tìm tên linh thú trong danh sách bên trái. Cameo/mod/admin có thể bấm Build sau khi chọn linh thú.</p>
+          <p>Hãy tìm tên linh thú trong danh sách bên trái.</p>
           <section id="homeLeaderboard" class="home-leaderboard"></section>
         </div>
         <article id="detailView" class="detail hidden"></article>
