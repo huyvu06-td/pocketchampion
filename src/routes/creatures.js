@@ -77,7 +77,7 @@ router.post('/seed-pokemon', requireRole('admin'), async (req, res) => {
     const result = await seedPokemonCatalog({ userId: req.user._id, force: true });
     res.json({
       ...result,
-      message: `Đã nhập sẵn ${result.total} Pokémon Gen 1-9 và ${result.totalSkills} tên skill. Thêm mới ${result.inserted}, cập nhật ${result.modified}.`
+      message: `Đã nhập sẵn ${result.total} Pokémon tiến hóa cuối Gen 1-9 và ${result.totalSkills} tên skill. Thêm mới ${result.inserted}, cập nhật ${result.modified}, xóa tên Pokémon cũ chưa có build ${result.removedOldPokemon || 0}.`
     });
   } catch (error) {
     res.status(400).json({ message: error.message || 'Không thể nhập sẵn Pokémon.' });

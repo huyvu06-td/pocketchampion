@@ -213,11 +213,11 @@ Khuyến nghị: sau mỗi đợt thêm/sửa nhiều build, admin nên bấm **
 
 ## Cập nhật v2.13
 
-- Tự nhập sẵn **1025 Pokémon Gen 1-9** vào danh sách tên linh thú.
-- Mỗi Pokémon có kèm danh sách **skill/move name** để gợi ý khi Cameo/mod/admin build.
+- Tự nhập sẵn **568 Pokémon tiến hóa cuối Gen 1-9** vào danh sách tên linh thú.
+- Mỗi Pokémon tiến hóa cuối có kèm danh sách **skill/move name** để gợi ý khi Cameo/mod/admin build.
 - Đã bỏ hoàn toàn mô tả skill; form build chỉ có 6 ô nhập **tên skill**.
-- Khi mở trang một Pokémon, người xem có thể xem danh sách skill gợi ý và bấm vào skill để copy tên.
-- Admin có thêm nút **Nhập sẵn Pokémon Gen 1-9** trong mục **Quản lý tên linh thú** để cập nhật lại danh sách bất cứ lúc nào.
-- Server sẽ tự seed Pokémon khi khởi động nếu chưa có dữ liệu. Có thể tắt bằng biến môi trường `AUTO_SEED_POKEMON=false`.
+- Khi mở trang một Pokémon tiến hóa cuối, người xem có thể xem danh sách skill gợi ý và bấm vào skill để copy tên.
+- Admin có thêm nút **Nhập sẵn Pokémon tiến hóa cuối Gen 1-9** trong mục **Quản lý tên linh thú** để cập nhật lại danh sách bất cứ lúc nào.
+- Server sẽ tự seed Pokémon tiến hóa cuối khi khởi động nếu chưa có dữ liệu. Có thể tắt bằng biến môi trường `AUTO_SEED_POKEMON=false`.
 
-Nguồn dữ liệu tên Pokémon và move name được lấy từ bộ CSV công khai của PokéAPI.
+Nguồn dữ liệu tên Pokémon tiến hóa cuối và move name được lấy từ bộ CSV công khai của PokéAPI. Pokémon một hệ tiến hóa duy nhất/không tiến hóa tiếp vẫn được tính là dạng cuối.

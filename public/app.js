@@ -646,7 +646,7 @@ function skillPoolHtml(skills = []) {
   return `
     <section class="form-section creature-skill-pool">
       <div class="section-title">
-        <h3>Skill gợi ý của Pokémon</h3>
+        <h3>Skill gợi ý của Pokémon tiến hóa cuối</h3>
         <p>Có ${uniqueSkills.length} tên skill để chọn khi build. Chỉ lưu tên skill, không cần mô tả chiêu thức.</p>
       </div>
       <details>
@@ -1260,10 +1260,10 @@ function renderCreaturesTable(items, total = items.length) {
 
 async function seedPokemonCatalog() {
   if (!isAdmin()) return showToast('Chỉ admin được nhập sẵn Pokémon.', 'error');
-  if (!confirm('Nhập sẵn 1025 Pokémon Gen 1-9 kèm danh sách skill? Tên trùng sẽ được cập nhật skill, build cũ vẫn giữ nguyên.')) return;
+  if (!confirm('Nhập sẵn 568 Pokémon tiến hóa cuối Gen 1-9 kèm danh sách skill? Tên trùng sẽ được cập nhật skill, build cũ vẫn giữ nguyên. Các tên Pokémon cũ chưa có build sẽ được dọn khỏi danh sách.')) return;
   try {
     const result = await api('/api/creatures/seed-pokemon', { method: 'POST', body: {} });
-    showToast(result.message || 'Đã nhập sẵn Pokémon.');
+    showToast(result.message || 'Đã nhập sẵn Pokémon tiến hóa cuối.');
     await Promise.all([loadCreatures(), loadCreaturesForAdmin()]);
   } catch (error) {
     showToast(error.message || 'Không thể nhập sẵn Pokémon.', 'error');
