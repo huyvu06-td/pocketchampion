@@ -10,7 +10,11 @@ router.post('/register', async (req, res) => {
   try {
     const username = validateUsername(req.body.username);
     const password = req.body.password;
+    const confirmPassword = req.body.confirmPassword;
     validatePassword(password);
+    if (password !== confirmPassword) {
+      return res.status(400).json({ message: 'Hai lần nhập mật khẩu không khớp.' });
+    }
 
     const passwordHash = await User.hashPassword(password);
 

@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>POCKET CHAMPION - Tra cứu build</title>
-  <link rel="stylesheet" href="styles.css?v=2.27" />
+  <link rel="stylesheet" href="styles.css?v=2.30" />
 </head>
 <body>
   <div id="toast" class="toast hidden"></div>
@@ -32,7 +32,7 @@
 
       <form id="loginForm" class="auth-form">
         <label>Tên đăng nhập
-          <input id="loginUsername" autocomplete="username" placeholder="vd: player01" required />
+          <input id="loginUsername" autocomplete="username" placeholder="vd: tu_nguyen" required />
         </label>
         <label>Mật khẩu
           <input id="loginPassword" type="password" autocomplete="current-password" minlength="6" maxlength="32" required />
@@ -46,10 +46,13 @@
           <input id="registerDisplayName" placeholder="Tên bạn bè thấy" />
         </label>
         <label>Tên đăng nhập
-          <input id="registerUsername" autocomplete="username" placeholder="..." required />
+          <input id="registerUsername" autocomplete="username" placeholder="chữ thường, số, _ . -" required />
         </label>
         <label>Mật khẩu
           <input id="registerPassword" type="password" autocomplete="new-password" minlength="6" maxlength="32" required />
+        </label>
+        <label>Nhập lại mật khẩu
+          <input id="registerConfirmPassword" type="password" autocomplete="new-password" minlength="6" maxlength="32" required />
         </label>
         <button class="primary full" type="submit">Tạo tài khoản</button>
         <p class="tiny-note">Tài khoản mới mặc định chỉ có quyền tra cứu. Mật khẩu 6–32 ký tự. Admin có thể nâng thành Cameo/mod/admin.</p>
@@ -105,13 +108,6 @@
 
         <div id="petList" class="pet-list"></div>
 
-        <section class="mod-board">
-          <div class="section-title compact">
-            <h3>Danh sách mod</h3>
-            <p>Ai build sẽ hiện tên người đó.</p>
-          </div>
-          <div id="modList" class="mod-list"></div>
-        </section>
       </aside>
 
       <section class="panel detail-panel">
@@ -273,6 +269,7 @@
         <input id="newGameName" placeholder="Tên trong game" />
         <input id="newUsername" placeholder="Tên đăng nhập" required />
         <input id="newPassword" type="password" placeholder="Mật khẩu 6–32 ký tự" minlength="6" maxlength="32" required />
+        <input id="newConfirmPassword" type="password" placeholder="Nhập lại mật khẩu" minlength="6" maxlength="32" required />
         <select id="newRole"></select>
       </div>
       <button class="primary" type="submit">Tạo tài khoản</button>
@@ -432,7 +429,7 @@
     <div id="teamGuideViewer" class="team-guide-viewer"></div>
   </dialog>
 
-  <script src="site-config.js?v=2.27"></script>
-  <script src="app.js?v=2.27"></script>
+  <script src="site-config.js?v=2.28"></script>
+  <script src="app.js?v=2.30"></script>
 </body>
 </html>

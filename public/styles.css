@@ -2209,3 +2209,10 @@ body {
   flex: 1 1 160px;
   justify-content: center;
 }
+
+
+/* v2.30: remove the old sidebar mod list completely on desktop and mobile. */
+.mod-board,
+#modList {
+  display: none !important;
+}

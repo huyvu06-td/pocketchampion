@@ -1,4 +1,16 @@
-# POCKET CHAMPION online v2.27
+# POCKET CHAMPION online v2.30
+
+Bản này xóa hoàn toàn **Danh sách mod** trong sidebar trên cả desktop và mobile.
+
+- Sidebar chỉ còn khu tra cứu Pokémon/build.
+- Không hiện khối **Danh sách mod** nữa.
+- Vẫn giữ **Bảng xếp hạng đóng góp build** ở trang chủ để người xem biết ai build nhiều.
+- Thêm cache-busting `v=2.30` cho CSS/JS để trình duyệt không giữ giao diện cũ.
+- Không ảnh hưởng tài khoản, build hay MongoDB.
+
+---
+
+# POCKET CHAMPION online v2.28
 
 Bản này chỉnh giao diện tra cứu:
 
@@ -309,8 +321,22 @@ window.POCKET_CHAMPION_TEXT = {
 Sửa chữ xong thì push lên GitHub, Render sẽ deploy lại.
 
 
-## v2.27 - Nút reload web
+## v2.28 - Nút reload web
 
 - Thêm nút **🔄 Reload web** cho tất cả người dùng.
 - Nút reload xuất hiện ở màn hình đăng nhập và thanh nút chính sau khi đăng nhập.
 - Dùng khi web bị lag/chậm trên Render Free hoặc trình duyệt giữ trạng thái cũ.
+
+
+## v2.28
+
+- Thêm ô **Nhập lại mật khẩu** khi người chơi tự tạo tài khoản.
+- Thêm ô **Nhập lại mật khẩu** khi admin tạo tài khoản cho bạn bè.
+- Backend kiểm tra password và confirmPassword phải trùng nhau trước khi tạo tài khoản.
+
+
+## v2.29
+
+- Xóa hoàn toàn khối **Danh sách mod** trong sidebar để trang tra cứu gọn hơn.
+- Vẫn giữ dữ liệu mod/admin/cameo cho bảng xếp hạng đóng góp ở trang chủ.
+- Không ảnh hưởng build và tài khoản trong MongoDB.

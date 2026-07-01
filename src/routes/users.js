@@ -72,6 +72,9 @@ router.post('/', async (req, res) => {
   try {
     const username = validateUsername(req.body.username);
     validatePassword(req.body.password);
+    if (req.body.password !== req.body.confirmPassword) {
+      return res.status(400).json({ message: 'Hai lần nhập mật khẩu không khớp.' });
+    }
     const setting = await SiteSetting.getMain();
     const roleDef = getRoleDefinition(setting.roles || [], req.body.role || 'user');
     const role = roleDef.key;

@@ -163,6 +163,7 @@ const el = {
 init();
 
 function init() {
+  removeSidebarModBoard();
   wireEvents();
   renderSiteTexts();
   renderOfficialLinks();
@@ -862,34 +863,17 @@ async function loadMods() {
   }
 }
 
-function renderModList() {
-  // Sidebar mod list removed in v2.29. Keep loading mod data for the home leaderboard.
-  if (!el.modList) {
-    renderHomeLeaderboard();
-    return;
-  }
-
-  if (!modList.length) {
-    el.modList.innerHTML = '<p class="muted">Chưa có Cameo/mod/admin nào.</p>';
-    renderHomeLeaderboard();
-    return;
-  }
-
-  el.modList.innerHTML = modList.map((mod, index) => `
-    <button class="mod-item mod-link" data-id="${escapeAttr(mod.id)}" type="button">
-      <span class="rank-number">#${index + 1}</span>
-      ${avatarHtml(mod, 'avatar-xs')}
-      <div>
-        <strong>${roleNameHtml(mod)}</strong>
-      </div>
-      <span class="badge">${Number(mod.buildCount || 0)} build</span>
-    </button>
-  `).join('');
-
-  el.modList.querySelectorAll('.mod-link').forEach(button => {
-    button.addEventListener('click', () => selectBuilder(button.dataset.id));
+function removeSidebarModBoard() {
+  document.querySelectorAll('.mod-board, #modList').forEach(node => {
+    const board = node.closest('.mod-board') || node;
+    board.remove();
   });
+}
 
+function renderModList() {
+  // Sidebar mod list is removed completely from v2.30.
+  // Keep mod data only for the home leaderboard contribution ranking.
+  removeSidebarModBoard();
   renderHomeLeaderboard();
 }
 
