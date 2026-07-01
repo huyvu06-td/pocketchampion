@@ -85,7 +85,7 @@ router.get('/:id', async (req, res) => {
   });
 });
 
-router.post('/', requireRole('admin'), async (req, res) => {
+router.post('/', requireRole('mod', 'admin'), async (req, res) => {
   try {
     const name = normalizeCreatureName(req.body.name);
     if (!name) throw new Error('Tên linh thú không được để trống.');
@@ -98,7 +98,7 @@ router.post('/', requireRole('admin'), async (req, res) => {
       updatedBy: req.user._id
     });
 
-    res.status(201).json({ creature: creature.toClient(0), message: 'Đã thêm tên linh thú.' });
+    res.status(201).json({ creature: creature.toClient(0), message: req.user.role === 'admin' ? 'Đã thêm tên linh thú.' : 'Đã thêm tên linh thú để bạn build.' });
   } catch (error) {
     if (error.code === 11000) {
       return res.status(409).json({ message: 'Tên linh thú này đã có trong danh sách.' });
@@ -107,7 +107,7 @@ router.post('/', requireRole('admin'), async (req, res) => {
   }
 });
 
-router.post('/bulk', requireRole('admin'), async (req, res) => {
+router.post('/bulk', requireRole('mod', 'admin'), async (req, res) => {
   try {
     const names = parseNameList(req.body.names ?? req.body.text ?? req.body);
     if (!names.length) return res.status(400).json({ message: 'Danh sách chưa có tên linh thú nào.' });

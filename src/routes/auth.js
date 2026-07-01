@@ -11,23 +11,19 @@ router.post('/register', async (req, res) => {
     const password = req.body.password;
     validatePassword(password);
 
-    const userCount = await User.countDocuments();
-    const role = userCount === 0 ? 'admin' : 'user';
     const passwordHash = await User.hashPassword(password);
 
     const user = await User.create({
       username,
       displayName: cleanText(req.body.displayName),
       passwordHash,
-      role
+      role: 'user'
     });
 
     res.status(201).json({
       user: user.safeJSON(),
       token: signToken(user),
-      message: role === 'admin'
-        ? 'Bạn là tài khoản đầu tiên nên được đặt làm admin.'
-        : 'Đăng ký thành công. Tài khoản thường chỉ có quyền tra cứu.'
+      message: 'Đăng ký thành công. Tài khoản mới mặc định là user chỉ tra cứu.'
     });
   } catch (error) {
     if (error.code === 11000) {
@@ -60,8 +56,8 @@ router.get('/me', requireAuth, (req, res) => {
 
 router.patch('/me/avatar', requireAuth, async (req, res) => {
   try {
-    if (!['mod', 'admin'].includes(req.user.role)) {
-      return res.status(403).json({ message: 'Chỉ mod và admin được đổi avatar.' });
+    if (!['cameo', 'mod', 'admin'].includes(req.user.role)) {
+      return res.status(403).json({ message: 'Chỉ Cameo, mod và admin được đổi avatar.' });
     }
 
     req.user.avatarData = validateAvatarData(req.body.avatarData);

@@ -77,7 +77,7 @@ function summarizeUser(user) {
 function canViewerEdit(viewer, beast) {
   if (!viewer) return false;
   if (viewer.role === 'admin') return true;
-  if (viewer.role !== 'mod') return false;
+  if (!['cameo', 'mod'].includes(viewer.role)) return false;
 
   const ownerId = beast.createdBy?._id ? beast.createdBy._id.toString() : beast.createdBy?.toString();
   return Boolean(ownerId && ownerId === viewer._id.toString());

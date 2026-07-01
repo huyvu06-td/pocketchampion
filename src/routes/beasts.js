@@ -2,6 +2,8 @@ const express = require('express');
 const mongoose = require('mongoose');
 const { Beast, canViewerEdit } = require('../models/Beast');
 const { Creature, normalizeCreatureName, creatureKey } = require('../models/Creature');
+const { User, USER_ROLES } = require('../models/User');
+const crypto = require('crypto');
 const { requireAuth, requireRole } = require('../middleware/auth');
 const { normalizeBeastPayload } = require('../utils/validate');
 
@@ -13,7 +15,7 @@ router.use(requireAuth);
 function duplicateMessage(req) {
   return req.user.role === 'admin'
     ? 'Bạn đã có một build cho linh thú này. Hãy sửa build cũ nếu muốn thay đổi.'
-    : 'Bạn đã có một build cho linh thú này. Mỗi mod chỉ có 1 build cho cùng một linh thú.';
+    : 'Bạn đã có một build cho linh thú này. Mỗi tài khoản build chỉ có 1 build cho cùng một linh thú.';
 }
 
 function escapeRegex(value = '') {
@@ -23,7 +25,7 @@ function escapeRegex(value = '') {
 async function findCreatureForCreate(req) {
   const creatureId = String(req.body.creatureId || req.body.creature || '').trim();
   if (!mongoose.isValidObjectId(creatureId)) {
-    throw new Error('Bạn cần chọn linh thú từ danh sách do admin thêm trước khi build.');
+    throw new Error('Bạn cần chọn linh thú từ danh sách do admin/mod thêm trước khi build.');
   }
   const creature = await Creature.findById(creatureId);
   if (!creature) {
@@ -38,10 +40,80 @@ async function findOrCreateCreatureByName(name, user) {
   const key = creatureKey(cleanName);
   let creature = await Creature.findOne({ key });
   if (!creature) {
-    if (user.role !== 'admin') {
-      throw new Error(`Linh thú "${cleanName}" chưa có trong danh sách. Chỉ admin được thêm tên linh thú.`);
+    if (!['mod', 'admin'].includes(user.role)) {
+      throw new Error(`Linh thú "${cleanName}" chưa có trong danh sách. Chỉ mod/admin được thêm tên linh thú; Cameo cần chọn tên đã có.`);
     }
     creature = await Creature.create({ name: cleanName, key, createdBy: user._id, updatedBy: user._id });
+  }
+  return creature;
+}
+
+function safeUsername(value = '') {
+  const raw = String(value || '').trim().toLowerCase();
+  const cleaned = raw.replace(/[^a-z0-9_.-]+/g, '_').replace(/^[_\.\-]+|[_\.\-]+$/g, '').slice(0, 32);
+  if (/^[a-z0-9_.-]{3,32}$/.test(cleaned)) return cleaned;
+  return `builder_${crypto.randomBytes(4).toString('hex')}`;
+}
+
+function userBackupJSON(user) {
+  if (!user) return null;
+  return {
+    username: user.username || '',
+    displayName: user.displayName || '',
+    gameName: user.gameName || '',
+    role: user.role || 'mod',
+    avatarData: user.avatarData || ''
+  };
+}
+
+function buildBackupJSON(build) {
+  const creature = build.creature || null;
+  const createdBy = build.createdBy || null;
+  return {
+    id: build._id.toString(),
+    creatureName: creature?.name || build.name,
+    name: creature?.name || build.name,
+    role: build.role || 'Khác',
+    element: build.element || '',
+    nature: build.nature || '',
+    passive: build.passive || '',
+    skills: build.skills || [],
+    stats: build.stats || {},
+    notes: build.notes || '',
+    builderUsername: createdBy?.username || '',
+    builderDisplayName: createdBy?.displayName || '',
+    builderGameName: createdBy?.gameName || '',
+    builderRole: createdBy?.role || '',
+    createdAt: build.createdAt,
+    updatedAt: build.updatedAt
+  };
+}
+
+async function findOrCreateBackupUser(userInfo, fallbackUser) {
+  const username = safeUsername(userInfo?.username || fallbackUser.username);
+  let user = await User.findOne({ username });
+  if (user) return user;
+
+  const role = USER_ROLES.includes(userInfo?.role) && ['cameo', 'mod', 'admin'].includes(userInfo.role) ? userInfo.role : 'mod';
+  const randomPassword = crypto.randomBytes(18).toString('base64url');
+  user = await User.create({
+    username,
+    displayName: String(userInfo?.displayName || userInfo?.builderDisplayName || username).slice(0, 60),
+    gameName: String(userInfo?.gameName || userInfo?.builderGameName || '').slice(0, 80),
+    avatarData: String(userInfo?.avatarData || '').slice(0, 60000),
+    role,
+    passwordHash: await User.hashPassword(randomPassword)
+  });
+  return user;
+}
+
+async function upsertCreatureForBackup(name, adminUser) {
+  const cleanName = normalizeCreatureName(name);
+  if (!cleanName) throw new Error('Tên linh thú trong backup bị trống.');
+  const key = creatureKey(cleanName);
+  let creature = await Creature.findOne({ key });
+  if (!creature) {
+    creature = await Creature.create({ name: cleanName, key, createdBy: adminUser._id, updatedBy: adminUser._id });
   }
   return creature;
 }
@@ -79,6 +151,142 @@ router.get('/roles', async (req, res) => {
   res.json({ roles: roles.filter(Boolean).sort((a, b) => a.localeCompare(b, 'vi')) });
 });
 
+router.get('/backup/export', requireRole('admin'), async (req, res) => {
+  const [creatures, builds] = await Promise.all([
+    Creature.find().sort({ name: 1 }),
+    Beast.find()
+      .populate('creature')
+      .populate('createdBy', USER_SELECT)
+      .populate('updatedBy', USER_SELECT)
+      .sort({ name: 1, updatedAt: -1 })
+  ]);
+
+  const builders = new Map();
+  for (const build of builds) {
+    const user = userBackupJSON(build.createdBy);
+    if (user?.username) builders.set(user.username, user);
+  }
+
+  res.json({
+    backupType: 'pocket-champion-build-backup',
+    version: '2.8',
+    exportedAt: new Date().toISOString(),
+    note: 'File này dùng để khôi phục tên linh thú và bài build. Không chứa mật khẩu gốc.',
+    counts: {
+      creatures: creatures.length,
+      builds: builds.length,
+      builders: builders.size
+    },
+    builders: Array.from(builders.values()),
+    creatures: creatures.map(creature => ({
+      name: creature.name,
+      key: creature.key,
+      createdAt: creature.createdAt,
+      updatedAt: creature.updatedAt
+    })),
+    builds: builds.map(buildBackupJSON)
+  });
+});
+
+router.post('/backup/import', requireRole('admin'), async (req, res) => {
+  try {
+    const backup = req.body.backup || req.body;
+    const clearExisting = Boolean(req.body.clearExisting);
+    const confirmText = String(req.body.confirmText || '').trim().toUpperCase();
+
+    if (clearExisting && confirmText !== 'KHOI PHUC') {
+      return res.status(400).json({ message: 'Để xóa dữ liệu hiện tại trước khi khôi phục, hãy xác nhận bằng: KHOI PHUC' });
+    }
+
+    const rawCreatures = Array.isArray(backup.creatures) ? backup.creatures : [];
+    const rawBuilds = Array.isArray(backup.builds) ? backup.builds : Array.isArray(backup.beasts) ? backup.beasts : Array.isArray(backup) ? backup : [];
+    const rawBuilders = Array.isArray(backup.builders) ? backup.builders : [];
+
+    if (!rawCreatures.length && !rawBuilds.length) {
+      return res.status(400).json({ message: 'File backup không có dữ liệu linh thú hoặc build.' });
+    }
+
+    if (clearExisting) {
+      await Promise.all([Beast.deleteMany({}), Creature.deleteMany({})]);
+    }
+
+    const builderMap = new Map();
+    for (const builder of rawBuilders) {
+      if (!builder?.username) continue;
+      const user = await findOrCreateBackupUser(builder, req.user);
+      builderMap.set(builder.username, user);
+    }
+
+    let creaturesCreated = 0;
+    let creaturesSkipped = 0;
+    let buildsCreated = 0;
+    let buildsUpdated = 0;
+    const errors = [];
+
+    for (const item of rawCreatures) {
+      try {
+        const name = normalizeCreatureName(item?.name || item);
+        if (!name) continue;
+        const key = creatureKey(name);
+        const result = await Creature.updateOne(
+          { key },
+          {
+            $setOnInsert: { name, key, createdBy: req.user._id },
+            $set: { updatedBy: req.user._id }
+          },
+          { upsert: true }
+        );
+        if (result.upsertedCount) creaturesCreated += 1;
+        else creaturesSkipped += 1;
+      } catch (error) {
+        errors.push({ type: 'creature', name: item?.name || String(item || ''), message: error.message });
+      }
+    }
+
+    for (const [index, item] of rawBuilds.entries()) {
+      try {
+        const creatureName = item.creatureName || item.name || item.creature?.name;
+        const creature = await upsertCreatureForBackup(creatureName, req.user);
+        const payload = normalizeBeastPayload({ ...item, name: creature.name });
+        const username = item.builderUsername || item.createdBy?.username || item.createdByUsername || '';
+        let owner = username ? builderMap.get(username) || await User.findOne({ username: safeUsername(username) }) : null;
+        if (!owner && username) {
+          owner = await findOrCreateBackupUser({
+            username,
+            displayName: item.builderDisplayName,
+            gameName: item.builderGameName,
+            role: item.builderRole || 'mod'
+          }, req.user);
+        }
+        if (!owner) owner = req.user;
+
+        const existing = await Beast.findOne({ creature: creature._id, createdBy: owner._id });
+        if (existing) {
+          Object.assign(existing, payload, { creature: creature._id, name: creature.name, updatedBy: req.user._id });
+          await existing.save();
+          buildsUpdated += 1;
+        } else {
+          await Beast.create({ ...payload, creature: creature._id, name: creature.name, createdBy: owner._id, updatedBy: req.user._id });
+          buildsCreated += 1;
+        }
+      } catch (error) {
+        errors.push({ type: 'build', index: index + 1, name: item?.name || item?.creatureName || '', message: error.message });
+      }
+    }
+
+    res.json({
+      message: `Khôi phục xong: thêm ${creaturesCreated} tên linh thú, thêm ${buildsCreated} build, cập nhật ${buildsUpdated} build, lỗi ${errors.length}.`,
+      creaturesCreated,
+      creaturesSkipped,
+      buildsCreated,
+      buildsUpdated,
+      errors
+    });
+  } catch (error) {
+    res.status(400).json({ message: error.message || 'Không thể khôi phục backup.' });
+  }
+});
+
 router.get('/:id', async (req, res) => {
   if (!mongoose.isValidObjectId(req.params.id)) {
     return res.status(404).json({ message: 'Không tìm thấy build.' });
@@ -91,7 +299,7 @@ router.get('/:id', async (req, res) => {
   res.json({ beast: beast.toClient({ viewer: req.user }) });
 });
 
-router.post('/', requireRole('mod', 'admin'), async (req, res) => {
+router.post('/', requireRole('cameo', 'mod', 'admin'), async (req, res) => {
   try {
     const creature = await findCreatureForCreate(req);
     const payload = normalizeBeastPayload({ ...req.body, name: creature.name });
@@ -114,7 +322,7 @@ router.post('/', requireRole('mod', 'admin'), async (req, res) => {
   }
 });
 
-router.put('/:id', requireRole('mod', 'admin'), async (req, res) => {
+router.put('/:id', requireRole('cameo', 'mod', 'admin'), async (req, res) => {
   try {
     if (!mongoose.isValidObjectId(req.params.id)) {
       return res.status(404).json({ message: 'Không tìm thấy build.' });
@@ -123,7 +331,7 @@ router.put('/:id', requireRole('mod', 'admin'), async (req, res) => {
     if (!beast) return res.status(404).json({ message: 'Không tìm thấy build.' });
 
     if (!canViewerEdit(req.user, beast)) {
-      return res.status(403).json({ message: 'Mod chỉ được sửa build do chính mod đó tạo. Chỉ admin mới sửa được build của người khác.' });
+      return res.status(403).json({ message: 'Cameo/mod chỉ được sửa build do chính mình tạo. Chỉ admin mới sửa được build của người khác.' });
     }
 
     const buildName = beast.creature?.name || beast.name;
@@ -151,7 +359,7 @@ router.delete('/:id', requireRole('admin'), async (req, res) => {
   res.json({ message: 'Đã xóa build.' });
 });
 
-router.post('/bulk/import', requireRole('mod', 'admin'), async (req, res) => {
+router.post('/bulk/import', requireRole('cameo', 'mod', 'admin'), async (req, res) => {
   try {
     const items = Array.isArray(req.body.beasts) ? req.body.beasts : Array.isArray(req.body) ? req.body : [];
     if (!items.length) return res.status(400).json({ message: 'File nhập không có dữ liệu build.' });

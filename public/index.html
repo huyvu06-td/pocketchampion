@@ -13,12 +13,14 @@
     <div class="auth-card">
       <p class="eyebrow">POCKET CHAMPION</p>
       <h1>Tra cứu build linh thú online</h1>
-      <p class="subtitle">Đăng nhập để tra cứu. Chỉ admin được thêm tên linh thú; mod chỉ build trên tên đã có và chỉ sửa build của mình.</p>
+      <p class="subtitle">Đăng nhập hoặc tự tạo tài khoản để tra cứu. Tài khoản mới mặc định là user; Cameo/mod/admin được build và chỉ sửa build của mình, riêng admin toàn quyền.</p>
 
       <div class="official-links-block auth-links">
         <p class="official-links-title">Liên kết chính thức</p>
         <div class="official-links" data-official-links></div>
       </div>
+
+      <button id="btnDonateAuth" class="donate-button hidden" type="button">💖 Donate / Ủng hộ</button>
 
       <div class="auth-tabs">
         <button id="tabLogin" class="active" type="button">Đăng nhập</button>
@@ -33,6 +35,7 @@
           <input id="loginPassword" type="password" autocomplete="current-password" minlength="6" maxlength="32" required />
         </label>
         <button class="primary full" type="submit">Đăng nhập</button>
+        <p class="tiny-note">Có thể tự tạo tài khoản để tra cứu. Tài khoản mới mặc định là user.</p>
       </form>
 
       <form id="registerForm" class="auth-form hidden">
@@ -46,7 +49,7 @@
           <input id="registerPassword" type="password" autocomplete="new-password" minlength="6" maxlength="32" required />
         </label>
         <button class="primary full" type="submit">Tạo tài khoản</button>
-        <p class="tiny-note">Tài khoản mới mặc định chỉ có quyền tra cứu. Mật khẩu 6–32 ký tự. Admin có thể nâng thành mod/admin.</p>
+        <p class="tiny-note">Tài khoản mới mặc định chỉ có quyền tra cứu. Mật khẩu 6–32 ký tự. Admin có thể nâng thành Cameo/mod/admin.</p>
       </form>
     </div>
   </section>
@@ -56,10 +59,11 @@
       <div>
         <p class="eyebrow">POCKET CHAMPION</p>
         <h1>Tra cứu build linh thú</h1>
-        <p class="subtitle">Admin quản lý danh sách tên linh thú. Mod search tên rồi bấm Build để tạo cách build riêng; link linh thú có thể share trực tiếp.</p>
+        <p class="subtitle">Admin/mod có thể thêm tên linh thú. Cameo/mod/admin search tên rồi bấm Build để tạo cách build riêng; link linh thú có thể share trực tiếp.</p>
         <div class="official-links hero-links" data-official-links></div>
       </div>
       <div class="hero-actions">
+        <button id="btnDonate" class="donate-button hidden" type="button">💖 Donate</button>
         <div id="currentUserMini" class="user-mini"><span id="currentUserAvatar" class="avatar avatar-sm"></span><span id="userBadge" class="user-badge"></span></div>
         <label id="avatarLabel" class="ghost avatar-upload hidden">
           Đổi avatar
@@ -68,9 +72,9 @@
         <button id="btnClearAvatar" class="ghost hidden" type="button">Xóa avatar</button>
         <button id="btnUsers" class="ghost hidden" type="button">Quản lý tài khoản</button>
         <button id="btnCreatures" class="primary hidden" type="button">Quản lý tên linh thú</button>
-        <button id="btnExport" class="ghost" type="button">Xuất JSON</button>
+        <button id="btnExport" class="ghost hidden" type="button">Sao lưu dữ liệu</button>
         <label id="importLabel" class="ghost file-label hidden">
-          Nhập JSON
+          Khôi phục backup
           <input id="importFile" type="file" accept="application/json" />
         </label>
         <button id="btnLogout" class="ghost" type="button">Đăng xuất</button>
@@ -112,7 +116,7 @@
       <section class="panel detail-panel">
         <div id="emptyState" class="empty-state">
           <h2>Chưa chọn linh thú</h2>
-          <p>Hãy tìm tên linh thú trong danh sách bên trái. Mod/admin có thể bấm Build sau khi chọn linh thú.</p>
+          <p>Hãy tìm tên linh thú trong danh sách bên trái. Cameo/mod/admin có thể bấm Build sau khi chọn linh thú.</p>
           <section id="homeLeaderboard" class="home-leaderboard"></section>
         </div>
         <article id="detailView" class="detail hidden"></article>
@@ -208,7 +212,7 @@
   <dialog id="creaturesDialog" class="dialog users-dialog">
     <div class="dialog-head">
       <div>
-        <p class="eyebrow">Admin</p>
+        <p class="eyebrow">Admin / Mod</p>
         <h2>Quản lý tên linh thú</h2>
       </div>
       <button type="button" id="btnCloseCreatures" class="icon-btn" aria-label="Đóng">×</button>
@@ -271,7 +275,8 @@
         <input id="newPassword" type="password" placeholder="Mật khẩu 6–32 ký tự" minlength="6" maxlength="32" required />
         <select id="newRole">
           <option value="user">user - chỉ xem</option>
-          <option value="mod">mod - thêm/sửa build của mình</option>
+          <option value="cameo">Cameo - được build</option>
+          <option value="mod">mod - thêm tên + build của mình</option>
           <option value="admin">admin - toàn quyền</option>
         </select>
       </div>
@@ -293,6 +298,56 @@
         </thead>
         <tbody id="usersTable"></tbody>
       </table>
+    </div>
+  </dialog>
+
+
+  <dialog id="donateDialog" class="dialog donate-dialog">
+    <div class="dialog-head">
+      <div>
+        <p class="eyebrow">Donate</p>
+        <h2>Ủng hộ admin</h2>
+      </div>
+      <button type="button" id="btnCloseDonate" class="icon-btn" aria-label="Đóng">×</button>
+    </div>
+
+    <div class="donate-body">
+      <div id="donateViewer" class="donate-viewer"></div>
+
+      <section id="donateAdminPanel" class="form-section hidden">
+        <div class="section-title">
+          <h3>Cấu hình donate</h3>
+          <p>Chỉ admin thấy phần này. Ảnh sẽ được nén để web nhẹ hơn.</p>
+        </div>
+
+        <form id="donateSettingsForm">
+          <label class="check-row">
+            <input id="donateEnabled" type="checkbox" />
+            <span>Hiển thị nút Donate cho mọi người</span>
+          </label>
+
+          <div class="grid two">
+            <label>Số tài khoản (STK)
+              <input id="donateAccountNumber" placeholder="Ví dụ: 0123456789" maxlength="80" />
+            </label>
+            <label>Tên ngân hàng
+              <input id="donateBankName" placeholder="Ví dụ: MB Bank, Vietcombank..." maxlength="120" />
+            </label>
+          </div>
+
+          <label class="file-label donate-file-label ghost">
+            Tải lên ảnh donate / QR
+            <input id="donateImageInput" type="file" accept="image/png,image/jpeg,image/webp" />
+          </label>
+          <p class="tiny-note">Ảnh gốc tối đa 2MB, hệ thống sẽ resize khoảng 420×420 và giới hạn dưới 180KB.</p>
+
+          <div class="dialog-actions">
+            <button id="btnClearDonateImage" type="button" class="ghost danger">Xóa ảnh</button>
+            <div class="spacer"></div>
+            <button type="submit" class="primary">Lưu donate</button>
+          </div>
+        </form>
+      </section>
     </div>
   </dialog>
 

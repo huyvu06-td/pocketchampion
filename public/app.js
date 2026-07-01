@@ -12,6 +12,9 @@ const TOKEN_KEY = 'pc_linhthu_token_v4';
 const MAX_AVATAR_SOURCE_BYTES = 2 * 1024 * 1024;
 const MAX_AVATAR_OUTPUT_BYTES = 40 * 1024;
 const AVATAR_SIZE = 128;
+const MAX_DONATE_SOURCE_BYTES = 2 * 1024 * 1024;
+const MAX_DONATE_OUTPUT_BYTES = 180 * 1024;
+const DONATE_IMAGE_SIZE = 420;
 
 let token = localStorage.getItem(TOKEN_KEY) || '';
 let currentUser = null;
@@ -22,6 +25,8 @@ let selectedBuildId = null;
 let roles = [];
 let modList = [];
 let selectedBuilder = null;
+let donationConfig = { enabled: false, visible: false, imageData: '', accountNumber: '', bankName: '' };
+let pendingDonateImageData = '';
 
 const el = {
   toast: document.querySelector('#toast'),
@@ -47,6 +52,18 @@ const el = {
   importLabel: document.querySelector('#importLabel'),
   importFile: document.querySelector('#importFile'),
   btnLogout: document.querySelector('#btnLogout'),
+  btnDonate: document.querySelector('#btnDonate'),
+  btnDonateAuth: document.querySelector('#btnDonateAuth'),
+  donateDialog: document.querySelector('#donateDialog'),
+  btnCloseDonate: document.querySelector('#btnCloseDonate'),
+  donateViewer: document.querySelector('#donateViewer'),
+  donateAdminPanel: document.querySelector('#donateAdminPanel'),
+  donateSettingsForm: document.querySelector('#donateSettingsForm'),
+  donateEnabled: document.querySelector('#donateEnabled'),
+  donateAccountNumber: document.querySelector('#donateAccountNumber'),
+  donateBankName: document.querySelector('#donateBankName'),
+  donateImageInput: document.querySelector('#donateImageInput'),
+  btnClearDonateImage: document.querySelector('#btnClearDonateImage'),
   searchInput: document.querySelector('#searchInput'),
   creatureSuggestions: document.querySelector('#creatureSuggestions'),
   homeLeaderboard: document.querySelector('#homeLeaderboard'),
@@ -105,6 +122,7 @@ init();
 function init() {
   wireEvents();
   renderOfficialLinks();
+  loadDonationPublic();
   restoreSession();
 }
 
@@ -122,6 +140,19 @@ function wireEvents() {
   });
 
   el.btnLogout.addEventListener('click', logout);
+  el.btnDonate?.addEventListener('click', openDonateDialog);
+  el.btnDonateAuth?.addEventListener('click', openDonateDialog);
+  el.btnCloseDonate?.addEventListener('click', () => el.donateDialog.close());
+  el.donateSettingsForm?.addEventListener('submit', async event => {
+    event.preventDefault();
+    await saveDonateSettings();
+  });
+  el.donateImageInput?.addEventListener('change', handleDonateImageUpload);
+  el.btnClearDonateImage?.addEventListener('click', () => {
+    pendingDonateImageData = '';
+    donationConfig.imageData = '';
+    renderDonateDialog();
+  });
   el.avatarInput.addEventListener('change', handleAvatarUpload);
   el.btnClearAvatar.addEventListener('click', clearAvatar);
   el.btnExport.addEventListener('click', exportBuilds);
@@ -249,7 +280,19 @@ function showAppScreen() {
 }
 
 function canCreateBuild() {
+  return currentUser && ['cameo', 'mod', 'admin'].includes(currentUser.role);
+}
+
+function canManageCreatureNames() {
   return currentUser && ['mod', 'admin'].includes(currentUser.role);
+}
+
+function canAdminCreatureNames() {
+  return currentUser?.role === 'admin';
+}
+
+function canUseAvatar() {
+  return currentUser && ['cameo', 'mod', 'admin'].includes(currentUser.role);
 }
 
 function canEditBuild(build) {
@@ -300,19 +343,157 @@ function renderOfficialLinks() {
   });
 }
 
+
+async function loadDonationPublic() {
+  try {
+    const data = await apiPublic('/api/settings/public');
+    donationConfig = data.donate || donationConfig;
+    updateDonateButtons();
+    if (el.donateDialog?.open) renderDonateDialog();
+  } catch (error) {
+    console.warn('Không tải được donate config:', error.message);
+    updateDonateButtons();
+  }
+}
+
+async function loadDonateAdmin() {
+  if (!isAdmin()) return;
+  try {
+    const data = await api('/api/settings/donate');
+    donationConfig = data.donate || donationConfig;
+    pendingDonateImageData = donationConfig.imageData || '';
+    updateDonateButtons();
+    renderDonateDialog();
+  } catch (error) {
+    showToast(error.message, 'error');
+  }
+}
+
+function updateDonateButtons() {
+  const visibleForViewer = Boolean(donationConfig?.enabled || donationConfig?.visible || isAdmin());
+  if (el.btnDonate) el.btnDonate.classList.toggle('hidden', !visibleForViewer);
+  if (el.btnDonateAuth) el.btnDonateAuth.classList.toggle('hidden', !Boolean(donationConfig?.enabled || donationConfig?.visible));
+}
+
+async function openDonateDialog() {
+  if (isAdmin()) {
+    await loadDonateAdmin();
+  } else {
+    renderDonateDialog();
+  }
+  el.donateDialog.showModal();
+}
+
+function renderDonateDialog() {
+  if (!el.donateViewer) return;
+  const imageData = pendingDonateImageData || donationConfig.imageData || '';
+  const enabled = Boolean(donationConfig.enabled);
+  const accountNumber = donationConfig.accountNumber || '';
+  const bankName = donationConfig.bankName || '';
+
+  el.donateViewer.innerHTML = `
+    <div class="donate-card">
+      <div class="donate-image-box">
+        ${imageData && isSafeAvatarDataUrl(imageData)
+          ? `<img src="${escapeAttr(imageData)}" alt="Ảnh donate" loading="lazy" />`
+          : '<div class="donate-placeholder">Chưa có ảnh donate / QR</div>'}
+      </div>
+      <div class="donate-info">
+        ${isAdmin() && !enabled ? '<span class="badge danger-badge">Đang ẩn với người xem</span>' : '<span class="badge strong-badge">Donate / Ủng hộ</span>'}
+        <h3>Cảm ơn bạn đã ủng hộ admin</h3>
+        <div class="copy-line">
+          <div><span>STK</span><strong>${escapeHtml(accountNumber || 'Chưa nhập')}</strong></div>
+          <button class="ghost small" data-copy-value="${escapeAttr(accountNumber)}" ${accountNumber ? '' : 'disabled'} type="button">Copy STK</button>
+        </div>
+        <div class="copy-line">
+          <div><span>Ngân hàng</span><strong>${escapeHtml(bankName || 'Chưa nhập')}</strong></div>
+          <button class="ghost small" data-copy-value="${escapeAttr(bankName)}" ${bankName ? '' : 'disabled'} type="button">Copy ngân hàng</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  el.donateViewer.querySelectorAll('[data-copy-value]').forEach(button => {
+    button.addEventListener('click', () => copyText(button.dataset.copyValue || '', 'Đã copy thông tin donate.'));
+  });
+
+  const admin = isAdmin();
+  el.donateAdminPanel?.classList.toggle('hidden', !admin);
+  if (admin) {
+    el.donateEnabled.checked = enabled;
+    el.donateAccountNumber.value = accountNumber;
+    el.donateBankName.value = bankName;
+  }
+}
+
+async function handleDonateImageUpload(event) {
+  const file = event.target.files?.[0];
+  event.target.value = '';
+  if (!file) return;
+  if (!isAdmin()) return showToast('Chỉ admin được đổi ảnh donate.', 'error');
+  if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) {
+    return showToast('Ảnh donate chỉ nhận PNG, JPG hoặc WebP.', 'error');
+  }
+  if (file.size > MAX_DONATE_SOURCE_BYTES) {
+    return showToast('Ảnh gốc tối đa 2MB. Hãy chọn ảnh nhỏ hơn.', 'error');
+  }
+
+  try {
+    pendingDonateImageData = await resizeSquareImageFile(file, DONATE_IMAGE_SIZE, MAX_DONATE_OUTPUT_BYTES, 'Ảnh donate');
+    donationConfig.imageData = pendingDonateImageData;
+    renderDonateDialog();
+    showToast('Đã nén ảnh donate. Bấm Lưu donate để áp dụng.');
+  } catch (error) {
+    showToast(error.message || 'Không thể xử lý ảnh donate.', 'error');
+  }
+}
+
+async function saveDonateSettings() {
+  if (!isAdmin()) return showToast('Chỉ admin được lưu donate.', 'error');
+  try {
+    const result = await api('/api/settings/donate', {
+      method: 'PATCH',
+      body: {
+        enabled: el.donateEnabled.checked,
+        accountNumber: el.donateAccountNumber.value,
+        bankName: el.donateBankName.value,
+        imageData: pendingDonateImageData || ''
+      }
+    });
+    donationConfig = result.donate || donationConfig;
+    pendingDonateImageData = donationConfig.imageData || '';
+    updateDonateButtons();
+    renderDonateDialog();
+    showToast(result.message || 'Đã lưu donate.');
+  } catch (error) {
+    showToast(error.message || 'Không thể lưu donate.', 'error');
+  }
+}
+
+function copyText(text, successMessage = 'Đã copy.') {
+  if (!text) return showToast('Không có nội dung để copy.', 'error');
+  navigator.clipboard.writeText(text).then(
+    () => showToast(successMessage),
+    () => showToast('Không thể copy.', 'error')
+  );
+}
+
 function updatePermissionUI() {
   const badgeText = `${currentUser.displayName || currentUser.username} · ${roleLabel(currentUser.role)}`;
   el.userBadge.textContent = badgeText;
   renderAvatar(el.currentUserAvatar, currentUser);
   el.btnUsers.classList.toggle('hidden', !isAdmin());
-  el.btnCreatures.classList.toggle('hidden', !isAdmin());
-  el.importLabel.classList.toggle('hidden', !canCreateBuild());
-  el.avatarLabel.classList.toggle('hidden', !['mod', 'admin'].includes(currentUser.role));
-  el.btnClearAvatar.classList.toggle('hidden', !['mod', 'admin'].includes(currentUser.role) || !currentUser.avatarData);
+  el.btnCreatures.classList.toggle('hidden', !canManageCreatureNames());
+  el.btnExport.classList.toggle('hidden', !isAdmin());
+  el.importLabel.classList.toggle('hidden', !isAdmin());
+  el.avatarLabel.classList.toggle('hidden', !canUseAvatar());
+  el.btnClearAvatar.classList.toggle('hidden', !canUseAvatar() || !currentUser.avatarData);
+  el.btnLogout.classList.toggle('hidden', !isAdmin());
+  updateDonateButtons();
 }
 
 async function loadAll() {
-  await Promise.all([loadRoles(), loadMods(), loadCreatures()]);
+  await Promise.all([loadRoles(), loadMods(), loadCreatures(), loadDonationPublic()]);
 }
 
 async function loadRoles() {
@@ -337,7 +518,7 @@ async function loadMods() {
 
 function renderModList() {
   if (!modList.length) {
-    el.modList.innerHTML = '<p class="muted">Chưa có mod/admin nào.</p>';
+    el.modList.innerHTML = '<p class="muted">Chưa có Cameo/mod/admin nào.</p>';
     renderHomeLeaderboard();
     return;
   }
@@ -373,7 +554,7 @@ function renderHomeLeaderboard() {
     <div class="leaderboard-card">
       <div class="section-title compact">
         <h3>Bảng xếp hạng đóng góp build</h3>
-        <p>Top mod/admin có nhiều bài build nhất. Bấm vào tên để xem toàn bộ linh thú người đó đã build.</p>
+        <p>Top Cameo/mod/admin có nhiều bài build nhất. Bấm vào tên để xem toàn bộ linh thú người đó đã build.</p>
       </div>
       <div class="leaderboard-list">
         ${top.map((mod, index) => `
@@ -414,9 +595,9 @@ async function loadCreatures() {
 
 function renderList() {
   if (!creatures.length) {
-    el.petList.innerHTML = isAdmin()
+    el.petList.innerHTML = canManageCreatureNames()
       ? '<p class="muted">Chưa có tên linh thú. Bấm “Quản lý tên linh thú” để thêm.</p>'
-      : '<p class="muted">Không tìm thấy tên linh thú. Hãy báo admin thêm tên trước.</p>';
+      : '<p class="muted">Không tìm thấy tên linh thú. Hãy báo admin/mod thêm tên trước.</p>';
     return;
   }
 
@@ -554,7 +735,7 @@ function renderBuilderDetail() {
     <section class="form-section">
       <div class="section-title">
         <h3>Toàn bộ linh thú đã build</h3>
-        <p>Bấm vào một linh thú để mở trang linh thú đó và xem toàn bộ build của các mod/admin.</p>
+        <p>Bấm vào một linh thú để mở trang linh thú đó và xem toàn bộ build của Cameo/mod/admin.</p>
       </div>
       <div class="builder-build-grid">
         ${builds.length ? builds.map(build => `
@@ -626,7 +807,7 @@ function renderDetail() {
 
     <section class="form-section">
       <div class="section-title">
-        <h3>Các bài build của mod/admin</h3>
+        <h3>Các bài build của Cameo/mod/admin</h3>
         <p>Bấm vào một bài build để xem đầy đủ Ability, Nature, Skills, Berry và ghi chú.</p>
       </div>
       <div class="build-list">
@@ -660,6 +841,8 @@ function renderDetail() {
   if (copyBuildButton && selectedBuild) copyBuildButton.addEventListener('click', () => copyBuild(selectedBuild));
   const editButton = document.querySelector('#btnEditBuild');
   if (editButton && selectedBuild) editButton.addEventListener('click', () => openBuildDialog(selectedBuild));
+  const deleteSelectedButton = document.querySelector('#btnDeleteSelectedBuild');
+  if (deleteSelectedButton && selectedBuild) deleteSelectedButton.addEventListener('click', () => deleteBuildById(selectedBuild.id));
 }
 
 function buildCardHtml(build) {
@@ -700,6 +883,7 @@ function buildDetailHtml(build) {
       </div>
       <div class="detail-actions">
         <button id="btnCopyBuild" class="ghost" type="button">Copy build</button>
+        ${build.canDelete ? '<button id="btnDeleteSelectedBuild" class="danger ghost" type="button">Xóa build</button>' : ''}
         ${canEditBuild(build) ? '<button id="btnEditBuild" class="primary" type="button">Sửa build</button>' : ''}
       </div>
     </div>
@@ -757,7 +941,7 @@ function statRow(key, value) {
 
 function openBuildDialog(build = null) {
   if (!canCreateBuild()) return showToast('Bạn không có quyền build linh thú.', 'error');
-  if (build && !canEditBuild(build)) return showToast('Mod chỉ được sửa build do chính mình tạo.', 'error');
+  if (build && !canEditBuild(build)) return showToast('Cameo/mod chỉ được sửa build do chính mình tạo.', 'error');
   if (!selectedCreature && !build?.creature) return showToast('Hãy chọn linh thú trước khi build.', 'error');
 
   clearFormError();
@@ -848,16 +1032,23 @@ async function saveBuildFromForm() {
 async function deleteCurrentBuild() {
   const id = el.petId.value;
   if (!id) return;
-  if (!confirm('Xóa build linh thú này? Thao tác này không thể hoàn tác.')) return;
+  await deleteBuildById(id, { fromDialog: true });
+}
+
+async function deleteBuildById(id, options = {}) {
+  if (!id) return;
+  if (!confirm('Xóa bài build này? Dùng khi build troll/sai dữ liệu. Thao tác này không thể hoàn tác.')) return;
   try {
     await api(`/api/beasts/${id}`, { method: 'DELETE' });
-    el.dialog.close();
+    if (options.fromDialog && el.dialog.open) el.dialog.close();
     showToast('Đã xóa build.');
     selectedBuildId = '';
     await Promise.all([loadRoles(), loadMods(), loadCreatures()]);
     if (selectedCreature) await selectCreature(selectedCreature.id, '');
+    else if (selectedBuilder) await selectBuilder(selectedBuilder.id);
   } catch (error) {
-    showFormError(error.message);
+    if (options.fromDialog) showFormError(error.message);
+    else showToast(error.message, 'error');
   }
 }
 
@@ -910,15 +1101,17 @@ function copyBuild(build) {
 }
 
 async function exportBuilds() {
+  if (!isAdmin()) return showToast('Chỉ admin được sao lưu toàn bộ dữ liệu.', 'error');
   try {
-    const data = await api('/api/beasts');
-    const blob = new Blob([JSON.stringify(data.beasts || [], null, 2)], { type: 'application/json' });
+    const data = await api('/api/beasts/backup/export');
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `pocket-champion-builds-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `pocket-champion-backup-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
+    showToast(`Đã tải backup: ${data.counts?.creatures || 0} linh thú, ${data.counts?.builds || 0} build.`);
   } catch (error) {
     showToast(error.message, 'error');
   }
@@ -928,27 +1121,42 @@ async function importBuilds(event) {
   const file = event.target.files?.[0];
   event.target.value = '';
   if (!file) return;
+  if (!isAdmin()) return showToast('Chỉ admin được khôi phục backup.', 'error');
   try {
     const text = await file.text();
     const data = JSON.parse(text);
-    const items = Array.isArray(data) ? data : data.beasts;
-    const result = await api('/api/beasts/bulk/import', {
+    const clearExisting = confirm(`Bạn muốn XÓA dữ liệu linh thú/build hiện tại rồi khôi phục từ file này không?
+
+OK = xóa dữ liệu hiện tại rồi khôi phục.
+Cancel = nhập chồng/cập nhật, không xóa dữ liệu cũ.`);
+    const body = { backup: data, clearExisting };
+    if (clearExisting) body.confirmText = 'KHOI PHUC';
+    const result = await api('/api/beasts/backup/import', {
       method: 'POST',
-      body: { beasts: items }
+      body
     });
-    showToast(`Nhập xong: thêm ${result.created}, cập nhật ${result.updated}, lỗi ${result.errors?.length || 0}.`);
+    showToast(result.message || `Khôi phục xong, lỗi ${result.errors?.length || 0}.`);
     if (result.errors?.length) console.warn(result.errors);
     await Promise.all([loadRoles(), loadMods(), loadCreatures()]);
     if (selectedCreature) await selectCreature(selectedCreature.id, selectedBuildId);
+    else renderDetail();
   } catch (error) {
-    showToast(error.message || 'File JSON không hợp lệ.', 'error');
+    showToast(error.message || 'File backup JSON không hợp lệ.', 'error');
   }
 }
 
 async function openCreaturesDialog() {
-  if (!isAdmin()) return;
+  if (!canManageCreatureNames()) return showToast('Chỉ mod và admin được thêm tên linh thú.', 'error');
+  updateCreaturesDialogPermissions();
   await loadCreaturesForAdmin();
   el.creaturesDialog.showModal();
+}
+
+function updateCreaturesDialogPermissions() {
+  if (el.bulkCreatureForm) el.bulkCreatureForm.classList.toggle('hidden', !canManageCreatureNames());
+  if (el.btnDeleteAllCreatures) el.btnDeleteAllCreatures.classList.toggle('hidden', !canAdminCreatureNames());
+  const title = document.querySelector('#creaturesDialog .eyebrow');
+  if (title) title.textContent = canAdminCreatureNames() ? 'Admin / Mod' : 'Mod';
 }
 
 async function loadCreaturesForAdmin() {
@@ -957,6 +1165,7 @@ async function loadCreaturesForAdmin() {
 }
 
 function renderCreaturesTable(items, total = items.length) {
+  const admin = canAdminCreatureNames();
   if (el.creatureAdminSummary) {
     const buildTotal = items.reduce((sum, item) => sum + Number(item.buildCount || 0), 0);
     el.creatureAdminSummary.textContent = `Tổng: ${Number(total || items.length)} linh thú · ${buildTotal} build trong bảng`;
@@ -969,13 +1178,13 @@ function renderCreaturesTable(items, total = items.length) {
   el.creaturesTable.innerHTML = items.map((item, index) => `
     <tr>
       <td class="stt-cell">${index + 1}</td>
-      <td><input class="creature-name-input" data-id="${escapeAttr(item.id)}" value="${escapeAttr(item.name)}" /></td>
+      <td><input class="creature-name-input" data-id="${escapeAttr(item.id)}" value="${escapeAttr(item.name)}" ${admin ? '' : 'readonly'} /></td>
       <td><span class="badge">${Number(item.buildCount || 0)} build</span></td>
       <td>${formatDate(item.updatedAt || item.createdAt)}</td>
       <td class="table-actions">
-        <button class="ghost small save-creature" data-id="${escapeAttr(item.id)}" type="button">Lưu tên</button>
+        ${admin ? `<button class="ghost small save-creature" data-id="${escapeAttr(item.id)}" type="button">Lưu tên</button>` : ''}
         <button class="ghost small open-creature" data-id="${escapeAttr(item.id)}" type="button">Mở</button>
-        <button class="danger ghost small delete-creature" data-id="${escapeAttr(item.id)}" ${Number(item.buildCount || 0) > 0 ? 'disabled' : ''} type="button">Xóa</button>
+        ${admin ? `<button class="danger ghost small delete-creature" data-id="${escapeAttr(item.id)}" ${Number(item.buildCount || 0) > 0 ? 'disabled' : ''} type="button">Xóa</button>` : ''}
       </td>
     </tr>
   `).join('');
@@ -1092,6 +1301,7 @@ function renderUsers(users) {
       <td>
         <select class="role-select" data-id="${escapeAttr(user.id)}" ${user.id === currentUser.id ? 'disabled' : ''}>
           <option value="user" ${user.role === 'user' ? 'selected' : ''}>user</option>
+          <option value="cameo" ${user.role === 'cameo' ? 'selected' : ''}>Cameo</option>
           <option value="mod" ${user.role === 'mod' ? 'selected' : ''}>mod</option>
           <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>admin</option>
         </select>
@@ -1200,6 +1410,19 @@ async function deleteUser(id) {
   } catch (error) {
     showToast(error.message, 'error');
   }
+}
+
+
+async function apiPublic(path, options = {}) {
+  const response = await fetch(path, {
+    method: options.method || 'GET',
+    headers: { 'Content-Type': 'application/json' },
+    body: options.body ? JSON.stringify(options.body) : undefined
+  });
+  const text = await response.text();
+  const data = text ? JSON.parse(text) : {};
+  if (!response.ok) throw new Error(data.message || 'Có lỗi xảy ra.');
+  return data;
 }
 
 async function api(path, options = {}) {
@@ -1338,32 +1561,37 @@ function blobToDataUrl(blob) {
   });
 }
 
-async function resizeAvatarFile(file) {
+async function resizeSquareImageFile(file, size, maxBytes, label = 'Ảnh') {
   const img = await loadImageFromFile(file);
   const canvas = document.createElement('canvas');
-  canvas.width = AVATAR_SIZE;
-  canvas.height = AVATAR_SIZE;
+  canvas.width = size;
+  canvas.height = size;
   const ctx = canvas.getContext('2d');
 
-  ctx.clearRect(0, 0, AVATAR_SIZE, AVATAR_SIZE);
+  ctx.clearRect(0, 0, size, size);
   const side = Math.min(img.naturalWidth || img.width, img.naturalHeight || img.height);
   const sx = ((img.naturalWidth || img.width) - side) / 2;
   const sy = ((img.naturalHeight || img.height) - side) / 2;
-  ctx.drawImage(img, sx, sy, side, side, 0, 0, AVATAR_SIZE, AVATAR_SIZE);
+  ctx.drawImage(img, sx, sy, side, side, 0, 0, size, size);
 
-  for (const quality of [0.82, 0.74, 0.66, 0.58, 0.5]) {
+  for (const quality of [0.88, 0.8, 0.72, 0.64, 0.56, 0.48]) {
     const blob = await canvasToBlob(canvas, 'image/jpeg', quality);
-    if (blob.size <= MAX_AVATAR_OUTPUT_BYTES) {
+    if (blob.size <= maxBytes) {
       return blobToDataUrl(blob);
     }
   }
 
-  throw new Error('Ảnh avatar vẫn quá lớn sau khi nén. Hãy chọn ảnh đơn giản hơn.');
+  throw new Error(`${label} vẫn quá lớn sau khi nén. Hãy chọn ảnh đơn giản hơn.`);
+}
+
+async function resizeAvatarFile(file) {
+  return resizeSquareImageFile(file, AVATAR_SIZE, MAX_AVATAR_OUTPUT_BYTES, 'Ảnh avatar');
 }
 
 function roleLabel(role) {
   if (role === 'admin') return 'admin - toàn quyền';
-  if (role === 'mod') return 'mod - build của mình';
+  if (role === 'mod') return 'mod - thêm tên + build';
+  if (role === 'cameo') return 'Cameo - được build';
   return 'user - chỉ xem';
 }
 

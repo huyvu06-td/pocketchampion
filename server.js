@@ -13,6 +13,7 @@ const authRoutes = require('./src/routes/auth');
 const beastRoutes = require('./src/routes/beasts');
 const userRoutes = require('./src/routes/users');
 const creatureRoutes = require('./src/routes/creatures');
+const settingRoutes = require('./src/routes/settings');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -35,6 +36,7 @@ app.get('/api/health', (req, res) => {
   res.json({ ok: true, app: 'Pocket Champion Linh Thu Online' });
 });
 
+app.use('/api/settings', settingRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/creatures', creatureRoutes);
 app.use('/api/beasts', beastRoutes);
@@ -54,15 +56,49 @@ async function seedAdmin() {
   const password = String(process.env.ADMIN_PASSWORD || '');
   const displayName = String(process.env.ADMIN_DISPLAY_NAME || 'Admin').trim();
   const gameName = String(process.env.ADMIN_GAME_NAME || '').trim();
+  const resetPasswordOnStart = String(process.env.ADMIN_RESET_PASSWORD_ON_START || '').toLowerCase() === 'true';
 
-  if (!username || !password) return;
+  if (!username || !password) {
+    const adminCount = await User.countDocuments({ role: 'admin' });
+    if (adminCount === 0) {
+      console.warn('No ADMIN_USERNAME/ADMIN_PASSWORD configured and no admin account exists. Self-registered users will remain user only.');
+    }
+    return;
+  }
 
   const existing = await User.findOne({ username });
-  if (existing) return;
+  if (!existing) {
+    const passwordHash = await User.hashPassword(password);
+    await User.create({ username, displayName, gameName, passwordHash, role: 'admin' });
+    console.log(`Seeded admin account: ${username}`);
+    return;
+  }
 
-  const passwordHash = await User.hashPassword(password);
-  await User.create({ username, displayName, gameName, passwordHash, role: 'admin' });
-  console.log(`Seeded admin account: ${username}`);
+  let changed = false;
+
+  if (existing.role !== 'admin') {
+    existing.role = 'admin';
+    existing.passwordHash = await User.hashPassword(password);
+    changed = true;
+    console.log(`Promoted configured account to admin: ${username}`);
+  } else if (resetPasswordOnStart) {
+    existing.passwordHash = await User.hashPassword(password);
+    changed = true;
+    console.log(`Reset configured admin password from environment: ${username}`);
+  }
+
+  if (displayName && !existing.displayName) {
+    existing.displayName = displayName;
+    changed = true;
+  }
+  if (gameName && !existing.gameName) {
+    existing.gameName = gameName;
+    changed = true;
+  }
+
+  if (changed) {
+    await existing.save();
+  }
 }
 
 

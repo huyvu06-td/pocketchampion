@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
-const USER_ROLES = ['user', 'mod', 'admin'];
+const USER_ROLES = ['user', 'cameo', 'mod', 'admin'];
 
 const userSchema = new mongoose.Schema(
   {

@@ -20,7 +20,7 @@ async function getBuildCountMap() {
 
 router.get('/mods', async (req, res) => {
   const [mods, countMap] = await Promise.all([
-    User.find({ role: { $in: ['mod', 'admin'] } }).sort({ gameName: 1, displayName: 1, username: 1 }),
+    User.find({ role: { $in: ['cameo', 'mod', 'admin'] } }).sort({ gameName: 1, displayName: 1, username: 1 }),
     getBuildCountMap()
   ]);
 
@@ -36,7 +36,7 @@ router.get('/:id/builds', async (req, res) => {
     return res.status(404).json({ message: 'Không tìm thấy mod/admin này.' });
   }
   const user = await User.findById(req.params.id);
-  if (!user || !['mod', 'admin'].includes(user.role)) {
+  if (!user || !['cameo', 'mod', 'admin'].includes(user.role)) {
     return res.status(404).json({ message: 'Không tìm thấy mod/admin này.' });
   }
 
