@@ -9,7 +9,7 @@ const { requireAuth, requireRole } = require('../middleware/auth');
 const { normalizeBeastPayload, cleanText } = require('../utils/validate');
 
 const router = express.Router();
-const USER_SELECT = 'username displayName gameName role avatarData';
+const USER_SELECT = 'username displayName gameName role roleBase avatarData';
 
 router.use(requireAuth);
 
@@ -113,8 +113,9 @@ async function findOrCreateBackupUser(userInfo, fallbackUser) {
     username,
     displayName: String(userInfo?.displayName || userInfo?.builderDisplayName || username).slice(0, 60),
     gameName: String(userInfo?.gameName || userInfo?.builderGameName || '').slice(0, 80),
-    avatarData: String(userInfo?.avatarData || '').slice(0, 60000),
+    avatarData: String(userInfo?.avatarData || '').slice(0, 360000),
     role,
+    roleBase: role,
     passwordHash: await User.hashPassword(randomPassword)
   });
   return user;

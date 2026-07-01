@@ -1,9 +1,11 @@
 const express = require('express');
 const mongoose = require('mongoose');
-const { User, USER_ROLES } = require('../models/User');
+const { User } = require('../models/User');
 const { Beast } = require('../models/Beast');
 const { requireAuth, requireRole } = require('../middleware/auth');
 const { cleanText, validatePassword, validateUsername } = require('../utils/validate');
+const { SiteSetting } = require('../models/SiteSetting');
+const { mergeRoleSettings, getRoleDefinition, baseRoleForUser, canBaseAtLeast } = require('../utils/roles');
 
 const router = express.Router();
 
@@ -19,8 +21,11 @@ async function getBuildCountMap() {
 }
 
 router.get('/mods', async (req, res) => {
+  const setting = await SiteSetting.getMain();
+  const roleDefs = mergeRoleSettings(setting.roles || []);
+  const buildRoleKeys = roleDefs.filter(role => canBaseAtLeast(role.baseRole, 'cameo')).map(role => role.key);
   const [mods, countMap] = await Promise.all([
-    User.find({ role: { $in: ['cameo', 'mod', 'admin'] } }).sort({ gameName: 1, displayName: 1, username: 1 }),
+    User.find({ $or: [{ role: { $in: buildRoleKeys } }, { roleBase: { $in: ['cameo', 'mod', 'admin'] } }] }).sort({ gameName: 1, displayName: 1, username: 1 }),
     getBuildCountMap()
   ]);
 
@@ -36,14 +41,14 @@ router.get('/:id/builds', async (req, res) => {
     return res.status(404).json({ message: 'Không tìm thấy mod/admin này.' });
   }
   const user = await User.findById(req.params.id);
-  if (!user || !['cameo', 'mod', 'admin'].includes(user.role)) {
+  if (!user || !['cameo', 'mod', 'admin'].includes(baseRoleForUser(user))) {
     return res.status(404).json({ message: 'Không tìm thấy mod/admin này.' });
   }
 
   const builds = await Beast.find({ createdBy: user._id })
     .populate('creature')
-    .populate('createdBy', 'username displayName gameName role avatarData')
-    .populate('updatedBy', 'username displayName gameName role avatarData')
+    .populate('createdBy', 'username displayName gameName role roleBase avatarData')
+    .populate('updatedBy', 'username displayName gameName role roleBase avatarData')
     .sort({ name: 1, updatedAt: -1 });
 
   res.json({
@@ -63,7 +68,9 @@ router.post('/', async (req, res) => {
   try {
     const username = validateUsername(req.body.username);
     validatePassword(req.body.password);
-    const role = USER_ROLES.includes(req.body.role) ? req.body.role : 'user';
+    const setting = await SiteSetting.getMain();
+    const roleDef = getRoleDefinition(setting.roles || [], req.body.role || 'user');
+    const role = roleDef.key;
     const passwordHash = await User.hashPassword(req.body.password);
 
     const user = await User.create({
@@ -71,6 +78,7 @@ router.post('/', async (req, res) => {
       displayName: cleanText(req.body.displayName),
       gameName: cleanText(req.body.gameName),
       role,
+      roleBase: roleDef.baseRole,
       passwordHash
     });
 
@@ -100,12 +108,11 @@ router.patch('/:id/profile', async (req, res) => {
 
 router.patch('/:id/role', async (req, res) => {
   try {
-    const role = req.body.role;
-    if (!USER_ROLES.includes(role)) {
-      return res.status(400).json({ message: 'Vai trò không hợp lệ.' });
-    }
+    const setting = await SiteSetting.getMain();
+    const roleDef = getRoleDefinition(setting.roles || [], req.body.role || 'user');
+    const role = roleDef.key;
 
-    if (req.params.id === req.user._id.toString() && role !== 'admin') {
+    if (req.params.id === req.user._id.toString() && roleDef.baseRole !== 'admin') {
       return res.status(400).json({ message: 'Bạn không thể tự hạ quyền admin của chính mình.' });
     }
 
@@ -113,6 +120,7 @@ router.patch('/:id/role', async (req, res) => {
     if (!user) return res.status(404).json({ message: 'Không tìm thấy tài khoản.' });
 
     user.role = role;
+    user.roleBase = roleDef.baseRole;
     await user.save();
     res.json({ user: user.safeJSON() });
   } catch (error) {

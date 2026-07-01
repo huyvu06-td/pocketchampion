@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { baseRoleForUser } = require('../utils/roles');
 
 const STAT_KEYS = ['hp', 'atk', 'satk', 'def', 'sdef', 'spe'];
 const MAX_TOTAL_STATS = 510;
@@ -68,14 +69,16 @@ function summarizeUser(user) {
     gameName,
     avatarData,
     role: user.role || '',
+    roleBase: baseRoleForUser(user),
     label: gameName || displayName || username || 'Không rõ'
   };
 }
 
 function canViewerEdit(viewer, beast) {
   if (!viewer) return false;
-  if (viewer.role === 'admin') return true;
-  if (!['cameo', 'mod'].includes(viewer.role)) return false;
+  const baseRole = baseRoleForUser(viewer);
+  if (baseRole === 'admin') return true;
+  if (!['cameo', 'mod'].includes(baseRole)) return false;
 
   const ownerId = beast.createdBy?._id ? beast.createdBy._id.toString() : beast.createdBy?.toString();
   return Boolean(ownerId && ownerId === viewer._id.toString());
@@ -97,7 +100,7 @@ beastSchema.methods.toClient = function toClient(options = {}) {
     createdBy: summarizeUser(this.createdBy),
     updatedBy: summarizeUser(this.updatedBy),
     canEdit: canViewerEdit(viewer, this),
-    canDelete: Boolean(viewer && viewer.role === 'admin'),
+    canDelete: Boolean(viewer && baseRoleForUser(viewer) === 'admin'),
     createdAt: this.createdAt,
     updatedAt: this.updatedAt
   };

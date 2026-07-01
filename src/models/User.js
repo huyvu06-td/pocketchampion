@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+const { baseRoleForUser } = require('../utils/roles');
 
 const USER_ROLES = ['user', 'cameo', 'mod', 'admin'];
 
@@ -30,7 +31,7 @@ const userSchema = new mongoose.Schema(
     avatarData: {
       type: String,
       trim: true,
-      maxlength: 60000,
+      maxlength: 360000,
       default: ''
     },
     passwordHash: {
@@ -38,6 +39,14 @@ const userSchema = new mongoose.Schema(
       required: true
     },
     role: {
+      type: String,
+      trim: true,
+      lowercase: true,
+      maxlength: 32,
+      default: 'user',
+      index: true
+    },
+    roleBase: {
       type: String,
       enum: USER_ROLES,
       default: 'user',
@@ -63,6 +72,7 @@ userSchema.methods.safeJSON = function safeJSON() {
     gameName: this.gameName,
     avatarData: this.avatarData,
     role: this.role,
+    roleBase: baseRoleForUser(this),
     createdAt: this.createdAt,
     updatedAt: this.updatedAt
   };
@@ -76,6 +86,7 @@ userSchema.methods.publicModJSON = function publicModJSON(buildCount = 0) {
     gameName: this.gameName,
     avatarData: this.avatarData,
     role: this.role,
+    roleBase: baseRoleForUser(this),
     buildCount
   };
 };

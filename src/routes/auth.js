@@ -2,6 +2,7 @@ const express = require('express');
 const { User } = require('../models/User');
 const { signToken, requireAuth } = require('../middleware/auth');
 const { cleanText, validatePassword, validateUsername, validateAvatarData } = require('../utils/validate');
+const { baseRoleForUser } = require('../utils/roles');
 
 const router = express.Router();
 
@@ -17,7 +18,8 @@ router.post('/register', async (req, res) => {
       username,
       displayName: cleanText(req.body.displayName),
       passwordHash,
-      role: 'user'
+      role: 'user',
+      roleBase: 'user'
     });
 
     res.status(201).json({
@@ -56,7 +58,7 @@ router.get('/me', requireAuth, (req, res) => {
 
 router.patch('/me/avatar', requireAuth, async (req, res) => {
   try {
-    if (!['cameo', 'mod', 'admin'].includes(req.user.role)) {
+    if (!['cameo', 'mod', 'admin'].includes(baseRoleForUser(req.user))) {
       return res.status(403).json({ message: 'Chỉ Cameo, mod và admin được đổi avatar.' });
     }
 

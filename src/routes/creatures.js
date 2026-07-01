@@ -6,7 +6,7 @@ const { requireAuth, requireRole } = require('../middleware/auth');
 const { seedPokemonCatalog, pokemonCatalogStats } = require('../utils/pokemonSeed');
 
 const router = express.Router();
-const USER_SELECT = 'username displayName gameName role avatarData';
+const USER_SELECT = 'username displayName gameName role roleBase avatarData';
 const MAX_BULK_NAMES = 1000;
 
 router.use(requireAuth);

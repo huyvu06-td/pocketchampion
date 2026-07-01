@@ -78,7 +78,7 @@ async function seedAdmin() {
   const existing = await User.findOne({ username });
   if (!existing) {
     const passwordHash = await User.hashPassword(password);
-    await User.create({ username, displayName, gameName, passwordHash, role: 'admin' });
+    await User.create({ username, displayName, gameName, passwordHash, role: 'admin', roleBase: 'admin' });
     console.log(`Seeded admin account: ${username}`);
     return;
   }
@@ -87,9 +87,13 @@ async function seedAdmin() {
 
   if (existing.role !== 'admin') {
     existing.role = 'admin';
+    existing.roleBase = 'admin';
     existing.passwordHash = await User.hashPassword(password);
     changed = true;
     console.log(`Promoted configured account to admin: ${username}`);
+  } else if (existing.roleBase !== 'admin') {
+    existing.roleBase = 'admin';
+    changed = true;
   } else if (resetPasswordOnStart) {
     existing.passwordHash = await User.hashPassword(password);
     changed = true;

@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const { User } = require('../models/User');
+const { baseRoleForUser } = require('../utils/roles');
 
 function signToken(user) {
   return jwt.sign(
@@ -34,7 +35,8 @@ async function requireAuth(req, res, next) {
 
 function requireRole(...allowedRoles) {
   return function roleMiddleware(req, res, next) {
-    if (!req.user || !allowedRoles.includes(req.user.role)) {
+    const baseRole = baseRoleForUser(req.user);
+    if (!req.user || (!allowedRoles.includes(req.user.role) && !allowedRoles.includes(baseRole))) {
       return res.status(403).json({ message: 'Bạn không có quyền thực hiện thao tác này.' });
     }
     next();

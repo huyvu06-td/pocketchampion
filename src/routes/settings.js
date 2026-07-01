@@ -2,6 +2,7 @@ const express = require('express');
 const { SiteSetting } = require('../models/SiteSetting');
 const { requireAuth, requireRole } = require('../middleware/auth');
 const { cleanText } = require('../utils/validate');
+const { mergeRoleSettings, normalizeRoleKey, normalizeRoleBase, sanitizeRoleColor, cleanRoleLogo, cleanRoleName, BUILTIN_ROLE_KEYS } = require('../utils/roles');
 
 const router = express.Router();
 const MAX_DONATE_IMAGE_BYTES = 180 * 1024;
@@ -77,6 +78,57 @@ router.patch('/donate', requireAuth, requireRole('admin'), async (req, res) => {
     });
   } catch (error) {
     res.status(400).json({ message: error.message || 'Không thể lưu cấu hình donate.' });
+  }
+});
+
+
+router.get('/roles', requireAuth, async (req, res) => {
+  const setting = await SiteSetting.getMain();
+  res.json({ roles: mergeRoleSettings(setting.roles || []) });
+});
+
+router.put('/roles', requireAuth, requireRole('admin'), async (req, res) => {
+  try {
+    const inputRoles = Array.isArray(req.body.roles) ? req.body.roles : [];
+    if (!inputRoles.length) {
+      return res.status(400).json({ message: 'Danh sách role không được để trống.' });
+    }
+
+    const normalized = [];
+    const seen = new Set();
+    for (const item of inputRoles) {
+      const key = normalizeRoleKey(item?.key || item?.name);
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      normalized.push({
+        key,
+        name: cleanRoleName(item?.name, key),
+        color: sanitizeRoleColor(item?.color),
+        logo: cleanRoleLogo(item?.logo),
+        baseRole: BUILTIN_ROLE_KEYS.includes(key) ? key : normalizeRoleBase(item?.baseRole),
+        locked: BUILTIN_ROLE_KEYS.includes(key)
+      });
+    }
+
+    const setting = await SiteSetting.getMain();
+    setting.roles = mergeRoleSettings(normalized);
+    await setting.save();
+
+    // Cập nhật roleBase của những tài khoản đang dùng role custom/built-in để quyền khớp cấu hình mới.
+    const { User } = require('../models/User');
+    const roleMap = new Map(setting.roles.map(role => [role.key, role]));
+    const users = await User.find({});
+    for (const user of users) {
+      const role = roleMap.get(user.role) || roleMap.get('user');
+      if (user.roleBase !== role.baseRole) {
+        user.roleBase = role.baseRole;
+        await user.save();
+      }
+    }
+
+    res.json({ message: 'Đã lưu cấu hình role.', roles: mergeRoleSettings(setting.roles || []) });
+  } catch (error) {
+    res.status(400).json({ message: error.message || 'Không thể lưu cấu hình role.' });
   }
 });
 

@@ -1,4 +1,18 @@
 const mongoose = require('mongoose');
+const { mergeRoleSettings, baseRoleForUser } = require('../utils/roles');
+
+
+const roleSettingSchema = new mongoose.Schema(
+  {
+    key: { type: String, trim: true, lowercase: true, maxlength: 32, required: true },
+    name: { type: String, trim: true, maxlength: 48, required: true },
+    color: { type: String, trim: true, maxlength: 7, default: '#a7b4d6' },
+    logo: { type: String, trim: true, maxlength: 12, default: '🏷️' },
+    baseRole: { type: String, enum: ['user', 'cameo', 'mod', 'admin'], default: 'user' },
+    locked: { type: Boolean, default: false }
+  },
+  { _id: false }
+);
 
 const donateSchema = new mongoose.Schema(
   {
@@ -14,7 +28,8 @@ const donateSchema = new mongoose.Schema(
 const siteSettingSchema = new mongoose.Schema(
   {
     key: { type: String, required: true, unique: true, default: 'main' },
-    donate: { type: donateSchema, default: () => ({}) }
+    donate: { type: donateSchema, default: () => ({}) },
+    roles: { type: [roleSettingSchema], default: () => [] }
   },
   { timestamps: true }
 );
@@ -28,7 +43,7 @@ siteSettingSchema.statics.getMain = async function getMain() {
 };
 
 siteSettingSchema.methods.publicJSON = function publicJSON(viewer = null) {
-  const isAdmin = viewer?.role === 'admin';
+  const isAdmin = baseRoleForUser(viewer) === 'admin';
   const donate = this.donate || {};
   return {
     donate: {
@@ -38,7 +53,8 @@ siteSettingSchema.methods.publicJSON = function publicJSON(viewer = null) {
       accountNumber: donate.accountNumber || '',
       bankName: donate.bankName || '',
       updatedAt: this.updatedAt
-    }
+    },
+    roles: mergeRoleSettings(this.roles || [])
   };
 };
 

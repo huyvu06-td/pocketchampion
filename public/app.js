@@ -11,8 +11,8 @@ const STAT_LABELS = {
 };
 const TOKEN_KEY = 'pc_linhthu_token_v4';
 const MAX_AVATAR_SOURCE_BYTES = 2 * 1024 * 1024;
-const MAX_AVATAR_OUTPUT_BYTES = 40 * 1024;
-const AVATAR_SIZE = 128;
+const MAX_AVATAR_OUTPUT_BYTES = 256 * 1024;
+const AVATAR_SIZE = 256;
 const MAX_DONATE_SOURCE_BYTES = 2 * 1024 * 1024;
 const MAX_DONATE_OUTPUT_BYTES = 180 * 1024;
 const DONATE_IMAGE_SIZE = 420;
@@ -31,6 +31,7 @@ let selectedCreature = null;
 let selectedBuilds = [];
 let selectedBuildId = null;
 let roles = [];
+let roleDefinitions = [];
 let modList = [];
 let selectedBuilder = null;
 let donationConfig = { enabled: false, visible: false, imageData: '', accountNumber: '', bankName: '' };
@@ -133,6 +134,14 @@ const el = {
   newUsername: document.querySelector('#newUsername'),
   newPassword: document.querySelector('#newPassword'),
   newRole: document.querySelector('#newRole'),
+  roleSettingsForm: document.querySelector('#roleSettingsForm'),
+  roleKey: document.querySelector('#roleKey'),
+  roleName: document.querySelector('#roleName'),
+  roleLogo: document.querySelector('#roleLogo'),
+  roleColor: document.querySelector('#roleColor'),
+  roleBase: document.querySelector('#roleBase'),
+  btnClearRoleForm: document.querySelector('#btnClearRoleForm'),
+  roleSettingsTable: document.querySelector('#roleSettingsTable'),
   usersTable: document.querySelector('#usersTable'),
   creaturesDialog: document.querySelector('#creaturesDialog'),
   btnCloseCreatures: document.querySelector('#btnCloseCreatures'),
@@ -216,6 +225,11 @@ function wireEvents() {
     event.preventDefault();
     await createUser();
   });
+  el.roleSettingsForm?.addEventListener('submit', async event => {
+    event.preventDefault();
+    await saveRoleSettingFromForm();
+  });
+  el.btnClearRoleForm?.addEventListener('click', clearRoleForm);
 
   el.btnCreatures.addEventListener('click', openCreaturesDialog);
   el.btnCloseCreatures.addEventListener('click', () => el.creaturesDialog.close());
@@ -320,19 +334,19 @@ function showAppScreen() {
 }
 
 function canCreateBuild() {
-  return currentUser && ['cameo', 'mod', 'admin'].includes(currentUser.role);
+  return currentUser && roleRank(currentBaseRole()) >= roleRank('cameo');
 }
 
 function canManageCreatureNames() {
-  return currentUser && ['mod', 'admin'].includes(currentUser.role);
+  return currentUser && roleRank(currentBaseRole()) >= roleRank('mod');
 }
 
 function canAdminCreatureNames() {
-  return currentUser?.role === 'admin';
+  return currentBaseRole() === 'admin';
 }
 
 function canUseAvatar() {
-  return currentUser && ['cameo', 'mod', 'admin'].includes(currentUser.role);
+  return currentUser && roleRank(currentBaseRole()) >= roleRank('cameo');
 }
 
 function canEditBuild(build) {
@@ -340,7 +354,7 @@ function canEditBuild(build) {
 }
 
 function isAdmin() {
-  return currentUser?.role === 'admin';
+  return currentBaseRole() === 'admin';
 }
 
 function builderProfile(build) {
@@ -350,6 +364,72 @@ function builderProfile(build) {
 function builderLabel(build) {
   const builder = builderProfile(build);
   return builder.label || builder.gameName || builder.displayName || builder.username || 'Không rõ';
+}
+
+
+function defaultRoleDefinitions() {
+  return [
+    { key: 'user', name: 'user - chỉ xem', color: '#a7b4d6', logo: '👤', baseRole: 'user', locked: true },
+    { key: 'cameo', name: 'Cameo - được build', color: '#f472b6', logo: '🎭', baseRole: 'cameo', locked: true },
+    { key: 'mod', name: 'mod - thêm tên + build', color: '#38bdf8', logo: '🛡️', baseRole: 'mod', locked: true },
+    { key: 'admin', name: 'admin - toàn quyền', color: '#facc15', logo: '👑', baseRole: 'admin', locked: true }
+  ];
+}
+
+function normalizeRoleKeyClient(value = '') {
+  const raw = String(value || '').trim().toLowerCase();
+  return raw.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 32) || '';
+}
+
+function roleMeta(roleKey = 'user') {
+  const key = normalizeRoleKeyClient(roleKey) || 'user';
+  return roleDefinitions.find(role => role.key === key) || defaultRoleDefinitions().find(role => role.key === key) || defaultRoleDefinitions()[0];
+}
+
+function roleBase(roleKey = 'user') {
+  return roleMeta(roleKey).baseRole || 'user';
+}
+
+function currentBaseRole() {
+  return currentUser?.roleBase || roleBase(currentUser?.role || 'user');
+}
+
+function roleRank(baseRole = 'user') {
+  return { user: 0, cameo: 1, mod: 2, admin: 3 }[baseRole] ?? 0;
+}
+
+function hasBaseAtLeast(userOrRole, minimum = 'user') {
+  const base = typeof userOrRole === 'string' ? roleBase(userOrRole) : (userOrRole?.roleBase || roleBase(userOrRole?.role || 'user'));
+  return roleRank(base) >= roleRank(minimum);
+}
+
+function roleBadgeHtml(roleKey = 'user', className = '') {
+  const role = roleMeta(roleKey);
+  return `<span class="role-pill ${escapeAttr(className)}" style="--role-color:${escapeAttr(role.color || '#a7b4d6')}"><span class="role-logo">${escapeHtml(role.logo || '🏷️')}</span>${escapeHtml(role.name || role.key)}</span>`;
+}
+
+function roleNameHtml(user, fallback = 'Không rõ') {
+  const role = roleMeta(user?.role || 'user');
+  const label = user?.gameName || user?.displayName || user?.username || fallback;
+  return `<span class="role-colored-name" style="--role-color:${escapeAttr(role.color || '#a7b4d6')}"><span class="role-logo">${escapeHtml(role.logo || '🏷️')}</span>${escapeHtml(label)}</span>`;
+}
+
+async function loadRoleSettings() {
+  try {
+    const data = await api('/api/settings/roles');
+    roleDefinitions = Array.isArray(data.roles) && data.roles.length ? data.roles : defaultRoleDefinitions();
+  } catch (error) {
+    console.warn('Không tải được role settings:', error.message);
+    roleDefinitions = defaultRoleDefinitions();
+  }
+  renderRoleSelectOptions();
+}
+
+function renderRoleSelectOptions() {
+  const options = (roleDefinitions.length ? roleDefinitions : defaultRoleDefinitions()).map(role =>
+    `<option value="${escapeAttr(role.key)}">${escapeHtml((role.logo || '') + ' ' + (role.name || role.key))}</option>`
+  ).join('');
+  if (el.newRole) el.newRole.innerHTML = options;
 }
 
 function getOfficialLinks() {
@@ -684,8 +764,7 @@ function copyText(text, successMessage = 'Đã copy.') {
 }
 
 function updatePermissionUI() {
-  const badgeText = `${currentUser.displayName || currentUser.username} · ${roleLabel(currentUser.role)}`;
-  el.userBadge.textContent = badgeText;
+  el.userBadge.innerHTML = `${escapeHtml(currentUser.displayName || currentUser.username)} · ${roleBadgeHtml(currentUser.role)}`;
   renderAvatar(el.currentUserAvatar, currentUser);
   el.btnUsers.classList.toggle('hidden', !isAdmin());
   el.btnCreatures.classList.toggle('hidden', !canManageCreatureNames());
@@ -698,6 +777,8 @@ function updatePermissionUI() {
 }
 
 async function loadAll() {
+  await loadRoleSettings();
+  updatePermissionUI();
   await Promise.all([loadRoles(), loadMods(), loadCreatures(), loadDonationPublic()]);
 }
 
@@ -746,8 +827,8 @@ function renderModList() {
       <span class="rank-number">#${index + 1}</span>
       ${avatarHtml(mod, 'avatar-xs')}
       <div>
-        <strong>${escapeHtml(mod.gameName || mod.displayName || mod.username)}</strong>
-        <span>${escapeHtml(roleLabel(mod.role))}</span>
+        <strong>${roleNameHtml(mod)}</strong>
+        ${roleBadgeHtml(mod.role)}
       </div>
       <span class="badge">${Number(mod.buildCount || 0)} build</span>
     </button>
@@ -779,7 +860,7 @@ function renderHomeLeaderboard() {
           <button class="leaderboard-row" data-id="${escapeAttr(mod.id)}" type="button">
             <span class="rank-medal">${index + 1}</span>
             ${avatarHtml(mod, 'avatar-sm')}
-            <span class="leaderboard-name">${escapeHtml(mod.gameName || mod.displayName || mod.username)}</span>
+            <span class="leaderboard-name">${roleNameHtml(mod)}</span>
             <span class="badge">${Number(mod.buildCount || 0)} build</span>
           </button>
         `).join('')}
@@ -968,9 +1049,9 @@ function renderBuilderDetail() {
     <div class="detail-head builder-page-head">
       <div>
         <p class="eyebrow">Người build</p>
-        <h2>${avatarHtml(selectedBuilder, 'avatar-lg')} ${escapeHtml(label)}</h2>
+        <h2>${avatarHtml(selectedBuilder, 'avatar-lg')} ${roleNameHtml(selectedBuilder, label)}</h2>
         <div class="pet-meta">
-          <span class="badge strong-badge">${escapeHtml(roleLabel(selectedBuilder?.role || 'mod'))}</span>
+          ${roleBadgeHtml(selectedBuilder?.role || 'mod', 'strong-badge')}
           <span class="badge">${Number(builds.length || selectedBuilder?.buildCount || 0)} build</span>
         </div>
       </div>
@@ -1097,7 +1178,7 @@ function buildCardHtml(build) {
       <div class="build-card-main">
         ${avatarHtml(builder, 'avatar-sm')}
         <div>
-          <h4>${escapeHtml(builderLabel(build))}</h4>
+          <h4>${roleNameHtml(builder, builderLabel(build))}</h4>
           <p>${escapeHtml(build.role || 'Khác')} · ${escapeHtml(build.nature || 'Chưa nhập Nature')}</p>
         </div>
       </div>
@@ -1125,7 +1206,7 @@ function buildDetailHtml(build) {
         <p class="eyebrow">Bài build</p>
         <h2>${escapeHtml(build.name)}</h2>
         <div class="pet-meta">
-          <span class="badge strong-badge builder-badge">${avatarHtml(builderProfile(build), 'avatar-xs')} Người build: ${escapeHtml(builderLabel(build))}</span>
+          <span class="badge strong-badge builder-badge">${avatarHtml(builderProfile(build), 'avatar-xs')} Người build: ${roleNameHtml(builderProfile(build), builderLabel(build))}</span>
           <span class="badge">${escapeHtml(build.role || 'Khác')}</span>
           <span class="badge">Berry ${Number(build.statTotal || 0)}/510</span>
         </div>
@@ -1139,7 +1220,7 @@ function buildDetailHtml(build) {
 
     <div class="info-grid">
       <div class="info-box"><span>Tính cách (Nature)</span><strong>${escapeHtml(build.nature || 'Chưa nhập')}</strong></div>
-      <div class="info-box builder-info"><span>Người build</span><strong>${avatarHtml(builderProfile(build), 'avatar-sm')} ${escapeHtml(builderLabel(build))}</strong></div>
+      <div class="info-box builder-info"><span>Người build</span><strong>${avatarHtml(builderProfile(build), 'avatar-sm')} ${roleNameHtml(builderProfile(build), builderLabel(build))}</strong></div>
       <div class="info-box"><span>Cập nhật</span><strong>${formatDate(build.updatedAt)}</strong></div>
     </div>
 
@@ -1541,7 +1622,10 @@ async function deleteAllCreatures() {
 
 async function openUsersDialog() {
   if (!isAdmin()) return;
+  await loadRoleSettings();
   await loadUsers();
+  renderRoleSettingsTable();
+  renderRoleSelectOptions();
   el.usersDialog.showModal();
 }
 
@@ -1559,10 +1643,7 @@ function renderUsers(users) {
       <td><input class="game-name-input" data-id="${escapeAttr(user.id)}" value="${escapeAttr(user.gameName || '')}" placeholder="Tên trong game" /></td>
       <td>
         <select class="role-select" data-id="${escapeAttr(user.id)}" ${user.id === currentUser.id ? 'disabled' : ''}>
-          <option value="user" ${user.role === 'user' ? 'selected' : ''}>user</option>
-          <option value="cameo" ${user.role === 'cameo' ? 'selected' : ''}>Cameo</option>
-          <option value="mod" ${user.role === 'mod' ? 'selected' : ''}>mod</option>
-          <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>admin</option>
+          ${roleOptionsHtml(user.role)}
         </select>
       </td>
       <td>${formatDate(user.createdAt)}</td>
@@ -1606,6 +1687,98 @@ function renderUsers(users) {
       await deleteUser(button.dataset.id);
     });
   });
+}
+
+
+function roleOptionsHtml(selectedRole = 'user') {
+  const defs = roleDefinitions.length ? roleDefinitions : defaultRoleDefinitions();
+  return defs.map(role => `<option value="${escapeAttr(role.key)}" ${role.key === selectedRole ? 'selected' : ''}>${escapeHtml((role.logo || '') + ' ' + (role.name || role.key))}</option>`).join('');
+}
+
+function renderRoleSettingsTable() {
+  if (!el.roleSettingsTable) return;
+  const defs = roleDefinitions.length ? roleDefinitions : defaultRoleDefinitions();
+  el.roleSettingsTable.innerHTML = defs.map(role => `
+    <div class="role-setting-row" data-key="${escapeAttr(role.key)}">
+      <div class="role-preview-box">
+        ${roleBadgeHtml(role.key)}
+        <small>key: ${escapeHtml(role.key)} · quyền nền: ${escapeHtml(role.baseRole)}</small>
+      </div>
+      <div class="role-setting-actions">
+        <button class="ghost small edit-role" data-key="${escapeAttr(role.key)}" type="button">Sửa</button>
+        ${role.locked ? '' : `<button class="danger ghost small delete-role" data-key="${escapeAttr(role.key)}" type="button">Xóa</button>`}
+      </div>
+    </div>
+  `).join('');
+
+  el.roleSettingsTable.querySelectorAll('.edit-role').forEach(button => {
+    button.addEventListener('click', () => fillRoleForm(button.dataset.key));
+  });
+  el.roleSettingsTable.querySelectorAll('.delete-role').forEach(button => {
+    button.addEventListener('click', async () => {
+      if (!confirm('Xóa role custom này? Tài khoản đang dùng role này sẽ mất style/quyền custom sau khi đổi role.')) return;
+      roleDefinitions = roleDefinitions.filter(role => role.key !== button.dataset.key);
+      await saveRoleDefinitions(roleDefinitions);
+    });
+  });
+}
+
+function fillRoleForm(key) {
+  const role = roleMeta(key);
+  if (!role) return;
+  el.roleKey.value = role.key;
+  el.roleName.value = role.name || role.key;
+  el.roleLogo.value = role.logo || '';
+  el.roleColor.value = /^#[0-9a-f]{6}$/i.test(role.color || '') ? role.color : '#38bdf8';
+  el.roleBase.value = role.baseRole || 'user';
+  el.roleBase.disabled = Boolean(role.locked);
+  el.roleName.focus();
+}
+
+function clearRoleForm() {
+  el.roleKey.value = '';
+  el.roleName.value = '';
+  el.roleLogo.value = '';
+  el.roleColor.value = '#38bdf8';
+  el.roleBase.value = 'cameo';
+  el.roleBase.disabled = false;
+}
+
+function roleKeyFromFormName(name) {
+  return 'custom_' + normalizeRoleKeyClient(name).replace(/^custom_/, '');
+}
+
+async function saveRoleSettingFromForm() {
+  if (!isAdmin()) return showToast('Chỉ admin được sửa role.', 'error');
+  const existingKey = el.roleKey.value || '';
+  const key = existingKey || roleKeyFromFormName(el.roleName.value);
+  if (!normalizeRoleKeyClient(key)) return showToast('Tên role không hợp lệ.', 'error');
+  const current = roleDefinitions.find(role => role.key === key);
+  const role = {
+    key,
+    name: el.roleName.value.trim() || key,
+    logo: el.roleLogo.value.trim() || '🏷️',
+    color: el.roleColor.value || '#38bdf8',
+    baseRole: current?.locked ? current.baseRole : el.roleBase.value,
+    locked: Boolean(current?.locked)
+  };
+  const next = roleDefinitions.filter(item => item.key !== key).concat(role);
+  await saveRoleDefinitions(next);
+  clearRoleForm();
+}
+
+async function saveRoleDefinitions(nextRoles) {
+  try {
+    const result = await api('/api/settings/roles', { method: 'PUT', body: { roles: nextRoles } });
+    roleDefinitions = result.roles || roleDefinitions;
+    renderRoleSelectOptions();
+    renderRoleSettingsTable();
+    await Promise.all([loadUsers(), loadMods()]);
+    updatePermissionUI();
+    showToast(result.message || 'Đã lưu role.');
+  } catch (error) {
+    showToast(error.message || 'Không thể lưu role.', 'error');
+  }
 }
 
 async function createUser() {
@@ -1875,10 +2048,7 @@ async function resizeAvatarFile(file) {
 }
 
 function roleLabel(role) {
-  if (role === 'admin') return 'admin - toàn quyền';
-  if (role === 'mod') return 'mod - thêm tên + build';
-  if (role === 'cameo') return 'Cameo - được build';
-  return 'user - chỉ xem';
+  return roleMeta(role).name || role || 'user - chỉ xem';
 }
 
 function formatDate(date) {

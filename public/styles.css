@@ -2035,3 +2035,106 @@ body {
 .sidebar [data-official-links] {
   display: none !important;
 }
+
+/* v2.23 role colors, role logos and custom-role admin panel */
+.role-colored-name,
+.role-pill {
+  --role-color: #a7b4d6;
+}
+
+.role-colored-name {
+  color: var(--role-color);
+  font-weight: 900;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-shadow: 0 0 18px color-mix(in srgb, var(--role-color) 36%, transparent);
+}
+
+.role-pill {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: fit-content;
+  border: 1px solid color-mix(in srgb, var(--role-color) 52%, transparent);
+  background: color-mix(in srgb, var(--role-color) 16%, rgba(255,255,255,0.05));
+  color: var(--role-color);
+  border-radius: 999px;
+  padding: 5px 9px;
+  font-weight: 850;
+  font-size: 0.78rem;
+  line-height: 1;
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--role-color) 13%, transparent);
+}
+
+.role-logo {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.05em;
+  line-height: 1;
+}
+
+.user-badge .role-pill {
+  margin-left: 4px;
+}
+
+.role-manager {
+  margin-top: 18px;
+}
+
+.role-settings-form {
+  display: grid;
+  gap: 10px;
+}
+
+.role-settings-form input[type="color"] {
+  min-height: 44px;
+  border-radius: 12px;
+  padding: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--line);
+}
+
+.role-table {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.role-setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(255,255,255,0.045);
+}
+
+.role-preview-box {
+  display: grid;
+  gap: 6px;
+}
+
+.role-preview-box small {
+  color: var(--muted);
+}
+
+.role-setting-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+@media (max-width: 700px) {
+  .role-setting-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .role-setting-actions {
+    justify-content: flex-start;
+  }
+}

@@ -1,4 +1,4 @@
-# POCKET CHAMPION online v2.22
+# POCKET CHAMPION online v2.23
 
 Bản này bỏ hẳn khối **Liên kết chính thức** bị trùng trong sidebar. Link chỉ còn ở phía trên trang và màn hình đăng nhập.
 
@@ -270,3 +270,11 @@ Nguồn dữ liệu tên Pokémon tiến hóa cuối và move name được lấ
 - Form build/dialog dễ thao tác hơn trên mobile; nút lưu/hủy dính dưới màn hình khi đang nhập.
 - Berry/stat editor hiển thị 2 cột trên điện thoại, 1 cột trên màn hình rất nhỏ.
 
+
+
+## v2.23
+
+- Cameo/mod/admin đổi avatar, avatar sau nén tối đa 256KB.
+- Admin/mod/cameo có màu tên và logo role riêng.
+- Admin có mục Custom role trong Quản lý tài khoản để chỉnh tên role, màu role, logo role và quyền nền.
+- Role custom có thể dùng quyền nền user / Cameo / mod / admin để dễ tùy biến sau này.

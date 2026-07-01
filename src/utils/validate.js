@@ -2,8 +2,8 @@ const { STAT_KEYS, MAX_TOTAL_STATS, statTotal } = require('../models/Beast');
 
 const MIN_PASSWORD_LENGTH = 6;
 const MAX_PASSWORD_LENGTH = 32;
-const MAX_AVATAR_BYTES = 40 * 1024;
-const MAX_AVATAR_DATA_URL_LENGTH = 60000;
+const MAX_AVATAR_BYTES = 256 * 1024;
+const MAX_AVATAR_DATA_URL_LENGTH = 360000;
 
 function cleanText(value, fallback = '') {
   return String(value ?? fallback).trim();
@@ -82,7 +82,7 @@ function validateAvatarData(avatarData) {
 
   const byteLength = Buffer.byteLength(match[2], 'base64');
   if (byteLength > MAX_AVATAR_BYTES) {
-    throw new Error('Avatar sau khi nén phải nhỏ hơn 40KB.');
+    throw new Error('Avatar sau khi nén phải nhỏ hơn 256KB.');
   }
 
   return value;
