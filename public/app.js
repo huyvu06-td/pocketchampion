@@ -65,6 +65,8 @@ const el = {
   importFile: document.querySelector('#importFile'),
   btnLogout: document.querySelector('#btnLogout'),
   btnHome: document.querySelector('#btnHome'),
+  btnReload: document.querySelector('#btnReload'),
+  btnReloadAuth: document.querySelector('#btnReloadAuth'),
   btnDonate: document.querySelector('#btnDonate'),
   btnDonateAuth: document.querySelector('#btnDonateAuth'),
   btnTeamGuides: document.querySelector('#btnTeamGuides'),
@@ -181,6 +183,8 @@ function wireEvents() {
 
   el.btnLogout.addEventListener('click', logout);
   el.btnHome?.addEventListener('click', goHome);
+  el.btnReload?.addEventListener('click', reloadWeb);
+  el.btnReloadAuth?.addEventListener('click', reloadWeb);
   el.btnDonate?.addEventListener('click', openDonateDialog);
   el.btnDonateAuth?.addEventListener('click', openDonateDialog);
   el.btnCloseDonate?.addEventListener('click', () => el.donateDialog.close());
@@ -316,6 +320,10 @@ async function register() {
   } catch (error) {
     showToast(error.message, 'error');
   }
+}
+
+function reloadWeb() {
+  window.location.reload();
 }
 
 function logout(showMessage = true) {

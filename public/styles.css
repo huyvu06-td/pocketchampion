@@ -2197,3 +2197,15 @@ body {
     margin-top: 16px;
   }
 }
+
+.auth-quick-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.auth-quick-actions > * {
+  flex: 1 1 160px;
+  justify-content: center;
+}

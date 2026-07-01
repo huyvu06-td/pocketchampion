@@ -1,4 +1,4 @@
-# POCKET CHAMPION online v2.26
+# POCKET CHAMPION online v2.27
 
 Bản này chỉnh giao diện tra cứu:
 
@@ -307,3 +307,10 @@ window.POCKET_CHAMPION_TEXT = {
 ```
 
 Sửa chữ xong thì push lên GitHub, Render sẽ deploy lại.
+
+
+## v2.27 - Nút reload web
+
+- Thêm nút **🔄 Reload web** cho tất cả người dùng.
+- Nút reload xuất hiện ở màn hình đăng nhập và thanh nút chính sau khi đăng nhập.
+- Dùng khi web bị lag/chậm trên Render Free hoặc trình duyệt giữ trạng thái cũ.
