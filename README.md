@@ -1,6 +1,13 @@
 # POCKET CHAMPION - Linh Thú Online
 
-## Bản v2.11 mới
+## Bản v2.17 mới
+
+
+- Thêm thư mục **Đội hình gợi ý của các hệ**: admin có thể up ảnh đội hình, nhập chú thích/ghi chú; người chơi bấm vào ảnh để xem đội hình phóng to.
+- Ảnh đội hình được nén trước khi lưu: ảnh thu nhỏ dưới 80KB, ảnh xem đầy đủ dưới khoảng 520KB để web nhẹ hơn.
+- Backup JSON của admin nay có thể kèm cả ảnh đội hình gợi ý để khôi phục sau này.
+- Đã bỏ ô **Hệ / thuộc tính** trong form build và phần hiển thị build.
+- Danh sách mặc định chỉ còn Pokémon dạng tiến hóa cuối Gen 1–9, kèm gợi ý tên skill và không có mô tả skill.
 
 
 
@@ -32,9 +39,9 @@ Bản online có:
 - Admin có thể nhập/sửa `Tên trong game` trong phần **Quản lý tài khoản**.
 - Cameo/mod/admin có thể tự đổi avatar. Ảnh sẽ được resize còn 128×128 và backend giới hạn dưới 40KB/avatar để web nhẹ kể cả khi có nhiều mod.
 - Mật khẩu được giới hạn 6–32 ký tự. Lưu ý: database chỉ lưu hash bcrypt, nên giới hạn này chủ yếu để dễ quản lý và an toàn, không phải vì mật khẩu dài làm tốn nhiều dung lượng.
-- Mỗi linh thú có tên, vai trò, hệ, tính cách, nội tại, 1–6 kỹ năng, ghi chú và 6 dòng chỉ số `HP / ATK / SATK / DEF / SDEF / SPE` tổng đúng 510 điểm.
+- Mỗi linh thú có tên, vai trò, tính cách, nội tại, 1–6 kỹ năng, ghi chú và 6 dòng chỉ số `HP / ATK / SATK / DEF / SDEF / SPE` tổng đúng 510 điểm.
 - Nhập / xuất JSON để backup hoặc chuyển dữ liệu từ bản cũ.
-- Donate được lưu trong MongoDB, không mất khi Render reload/redeploy.
+- Donate và ảnh đội hình gợi ý được lưu trong MongoDB, không mất khi Render reload/redeploy.
 
 ## 1. Chạy thử trên máy
 
@@ -221,3 +228,15 @@ Khuyến nghị: sau mỗi đợt thêm/sửa nhiều build, admin nên bấm **
 - Server sẽ tự seed Pokémon tiến hóa cuối khi khởi động nếu chưa có dữ liệu. Có thể tắt bằng biến môi trường `AUTO_SEED_POKEMON=false`.
 
 Nguồn dữ liệu tên Pokémon tiến hóa cuối và move name được lấy từ bộ CSV công khai của PokéAPI. Pokémon một hệ tiến hóa duy nhất/không tiến hóa tiếp vẫn được tính là dạng cuối.
+
+
+## Thay đổi v2.15
+
+- Bỏ hoàn toàn ô **Hệ / thuộc tính (Element)** khỏi form build.
+- Khi xem/copy/sao lưu build không còn hiển thị/lưu trường hệ/thuộc tính nữa.
+
+## v2.17
+
+- Trang chủ và danh sách bên trái chỉ hiển thị Pokémon đã có ít nhất 1 bài build.
+- User thường khi search cũng chỉ thấy Pokémon đã có build; Cameo/mod/admin vẫn search được tên chưa build để tạo build mới.
+- Thêm nút **Trang chủ** ở đầu trang để quay về màn hình chính, xóa tìm kiếm và bỏ chọn linh thú/người build.

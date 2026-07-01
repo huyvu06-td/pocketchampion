@@ -53,16 +53,22 @@ async function buildCountMap(creatureIds = null) {
 router.get('/', async (req, res) => {
   const search = normalizeCreatureName(req.query.search || '');
   const limit = Math.min(Math.max(Number(req.query.limit || 300), 1), 3000);
+  const builtOnly = ['1', 'true', 'yes'].includes(String(req.query.builtOnly || '').trim().toLowerCase());
   const filter = search ? { name: { $regex: escapeRegex(search), $options: 'i' } } : {};
   const [creatures, total] = await Promise.all([
     Creature.find(filter).sort({ name: 1 }).limit(limit),
     Creature.countDocuments(filter)
   ]);
   const countMap = await buildCountMap(creatures.map(creature => creature._id));
+  const rows = creatures
+    .map(creature => creature.toClient(countMap.get(creature._id.toString()) || 0))
+    .filter(creature => !builtOnly || Number(creature.buildCount || 0) > 0);
+
   res.json({
-    total,
+    total: builtOnly ? rows.length : total,
     limit,
-    creatures: creatures.map(creature => creature.toClient(countMap.get(creature._id.toString()) || 0))
+    builtOnly,
+    creatures: rows
   });
 });
 

@@ -1519,3 +1519,139 @@ textarea#bulkCreatureNames {
 .fixed-skill-row {
   grid-template-columns: 86px minmax(0, 1fr);
 }
+
+.team-guides-dialog {
+  width: min(1080px, calc(100vw - 28px));
+}
+
+.team-guides-body {
+  padding: 22px;
+}
+
+.team-guide-upload-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.team-guide-preview {
+  margin-top: 14px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.04);
+  max-width: 420px;
+}
+
+.team-guide-preview img {
+  width: 100%;
+  display: block;
+  object-fit: contain;
+  background: #fff;
+}
+
+.team-guides-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 16px;
+}
+
+.team-guide-card {
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.045);
+  box-shadow: var(--shadow-soft);
+}
+
+.team-guide-thumb {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  display: block;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.22);
+}
+
+.team-guide-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.18s ease;
+}
+
+.team-guide-thumb:hover img {
+  transform: scale(1.035);
+}
+
+.team-guide-card-body {
+  padding: 14px;
+  display: grid;
+  gap: 8px;
+}
+
+.team-guide-card-body h4,
+.team-guide-card-body p {
+  margin: 0;
+}
+
+.team-guide-card-body p {
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.team-guide-viewer-dialog {
+  width: min(1180px, calc(100vw - 28px));
+}
+
+.team-guide-viewer {
+  padding: 20px;
+}
+
+.team-guide-full-card {
+  display: grid;
+  gap: 16px;
+}
+
+.team-guide-full-card img {
+  width: 100%;
+  max-height: 72vh;
+  object-fit: contain;
+  border-radius: 20px;
+  border: 1px solid var(--line);
+  background: #fff;
+}
+
+.team-guide-full-info {
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.team-guide-full-info h3,
+.team-guide-full-info p {
+  margin: 0 0 10px;
+}
+
+.team-guide-full-info p {
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+@media (max-width: 720px) {
+  .team-guides-body,
+  .team-guide-viewer {
+    padding: 14px;
+  }
+
+  .team-guides-grid {
+    grid-template-columns: 1fr;
+  }
+}

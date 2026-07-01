@@ -15,6 +15,13 @@ const AVATAR_SIZE = 128;
 const MAX_DONATE_SOURCE_BYTES = 2 * 1024 * 1024;
 const MAX_DONATE_OUTPUT_BYTES = 180 * 1024;
 const DONATE_IMAGE_SIZE = 420;
+const MAX_TEAM_GUIDE_SOURCE_BYTES = 3 * 1024 * 1024;
+const MAX_TEAM_GUIDE_IMAGE_BYTES = 520 * 1024;
+const MAX_TEAM_GUIDE_THUMB_BYTES = 80 * 1024;
+const TEAM_GUIDE_IMAGE_MAX_WIDTH = 1200;
+const TEAM_GUIDE_IMAGE_MAX_HEIGHT = 900;
+const TEAM_GUIDE_THUMB_MAX_WIDTH = 420;
+const TEAM_GUIDE_THUMB_MAX_HEIGHT = 260;
 
 let token = localStorage.getItem(TOKEN_KEY) || '';
 let currentUser = null;
@@ -27,6 +34,9 @@ let modList = [];
 let selectedBuilder = null;
 let donationConfig = { enabled: false, visible: false, imageData: '', accountNumber: '', bankName: '' };
 let pendingDonateImageData = '';
+let teamGuides = [];
+let pendingTeamGuideImageData = '';
+let pendingTeamGuideThumbData = '';
 
 const el = {
   toast: document.querySelector('#toast'),
@@ -52,8 +62,25 @@ const el = {
   importLabel: document.querySelector('#importLabel'),
   importFile: document.querySelector('#importFile'),
   btnLogout: document.querySelector('#btnLogout'),
+  btnHome: document.querySelector('#btnHome'),
   btnDonate: document.querySelector('#btnDonate'),
   btnDonateAuth: document.querySelector('#btnDonateAuth'),
+  btnTeamGuides: document.querySelector('#btnTeamGuides'),
+  teamGuidesDialog: document.querySelector('#teamGuidesDialog'),
+  btnCloseTeamGuides: document.querySelector('#btnCloseTeamGuides'),
+  teamGuideAdminPanel: document.querySelector('#teamGuideAdminPanel'),
+  teamGuideForm: document.querySelector('#teamGuideForm'),
+  teamGuideTitle: document.querySelector('#teamGuideTitle'),
+  teamGuideNote: document.querySelector('#teamGuideNote'),
+  teamGuideImageInput: document.querySelector('#teamGuideImageInput'),
+  teamGuideImageStatus: document.querySelector('#teamGuideImageStatus'),
+  teamGuidePreview: document.querySelector('#teamGuidePreview'),
+  btnClearTeamGuideForm: document.querySelector('#btnClearTeamGuideForm'),
+  teamGuidesGrid: document.querySelector('#teamGuidesGrid'),
+  teamGuideViewerDialog: document.querySelector('#teamGuideViewerDialog'),
+  btnCloseTeamGuideViewer: document.querySelector('#btnCloseTeamGuideViewer'),
+  teamGuideViewerTitle: document.querySelector('#teamGuideViewerTitle'),
+  teamGuideViewer: document.querySelector('#teamGuideViewer'),
   donateDialog: document.querySelector('#donateDialog'),
   btnCloseDonate: document.querySelector('#btnCloseDonate'),
   donateViewer: document.querySelector('#donateViewer'),
@@ -83,7 +110,6 @@ const el = {
   creatureId: document.querySelector('#creatureId'),
   name: document.querySelector('#name'),
   role: document.querySelector('#role'),
-  element: document.querySelector('#element'),
   nature: document.querySelector('#nature'),
   passive: document.querySelector('#passive'),
   skillsWrap: document.querySelector('#skillsWrap'),
@@ -142,9 +168,19 @@ function wireEvents() {
   });
 
   el.btnLogout.addEventListener('click', logout);
+  el.btnHome?.addEventListener('click', goHome);
   el.btnDonate?.addEventListener('click', openDonateDialog);
   el.btnDonateAuth?.addEventListener('click', openDonateDialog);
   el.btnCloseDonate?.addEventListener('click', () => el.donateDialog.close());
+  el.btnTeamGuides?.addEventListener('click', openTeamGuidesDialog);
+  el.btnCloseTeamGuides?.addEventListener('click', () => el.teamGuidesDialog.close());
+  el.btnCloseTeamGuideViewer?.addEventListener('click', () => el.teamGuideViewerDialog.close());
+  el.teamGuideForm?.addEventListener('submit', async event => {
+    event.preventDefault();
+    await saveTeamGuide();
+  });
+  el.teamGuideImageInput?.addEventListener('change', handleTeamGuideImageUpload);
+  el.btnClearTeamGuideForm?.addEventListener('click', clearTeamGuideForm);
   el.donateSettingsForm?.addEventListener('submit', async event => {
     event.preventDefault();
     await saveDonateSettings();
@@ -347,6 +383,163 @@ function renderOfficialLinks() {
 }
 
 
+async function openTeamGuidesDialog() {
+  await loadTeamGuides();
+  renderTeamGuidesDialog();
+  el.teamGuidesDialog.showModal();
+}
+
+async function loadTeamGuides() {
+  try {
+    const data = await api('/api/team-guides');
+    teamGuides = data.guides || [];
+  } catch (error) {
+    showToast(error.message || 'Không tải được đội hình gợi ý.', 'error');
+  }
+}
+
+function renderTeamGuidesDialog() {
+  if (!el.teamGuidesGrid) return;
+  el.teamGuideAdminPanel?.classList.toggle('hidden', !isAdmin());
+
+  if (!teamGuides.length) {
+    el.teamGuidesGrid.innerHTML = '<p class="muted">Chưa có ảnh đội hình gợi ý nào.</p>';
+    return;
+  }
+
+  el.teamGuidesGrid.innerHTML = teamGuides.map(guide => `
+    <article class="team-guide-card" data-id="${escapeAttr(guide.id)}">
+      <button class="team-guide-thumb" data-id="${escapeAttr(guide.id)}" type="button" aria-label="Xem ${escapeAttr(guide.title)}">
+        <img src="${escapeAttr(guide.thumbData || guide.imageData || '')}" alt="${escapeAttr(guide.title)}" loading="lazy" />
+      </button>
+      <div class="team-guide-card-body">
+        <h4>${escapeHtml(guide.title)}</h4>
+        ${guide.note ? `<p>${escapeHtml(guide.note)}</p>` : '<p class="muted">Không có ghi chú.</p>'}
+        <div class="pet-meta">
+          <span class="badge">${formatDate(guide.updatedAt || guide.createdAt)}</span>
+          ${isAdmin() ? `<button class="danger ghost small delete-team-guide" data-id="${escapeAttr(guide.id)}" type="button">Xóa</button>` : ''}
+        </div>
+      </div>
+    </article>
+  `).join('');
+
+  el.teamGuidesGrid.querySelectorAll('.team-guide-thumb').forEach(button => {
+    button.addEventListener('click', () => viewTeamGuide(button.dataset.id));
+  });
+
+  el.teamGuidesGrid.querySelectorAll('.delete-team-guide').forEach(button => {
+    button.addEventListener('click', async event => {
+      event.stopPropagation();
+      await deleteTeamGuide(button.dataset.id);
+    });
+  });
+}
+
+async function viewTeamGuide(id) {
+  try {
+    const data = await api(`/api/team-guides/${encodeURIComponent(id)}`);
+    const guide = data.guide;
+    el.teamGuideViewerTitle.textContent = guide.title || 'Đội hình';
+    el.teamGuideViewer.innerHTML = `
+      <div class="team-guide-full-card">
+        <img src="${escapeAttr(guide.imageData || guide.thumbData || '')}" alt="${escapeAttr(guide.title || 'Đội hình')}" loading="lazy" />
+        <div class="team-guide-full-info">
+          <h3>${escapeHtml(guide.title || 'Đội hình')}</h3>
+          ${guide.note ? `<p>${escapeHtml(guide.note).replace(/\n/g, '<br>')}</p>` : '<p class="muted">Không có ghi chú.</p>'}
+          <div class="pet-meta">
+            <span class="badge">Cập nhật: ${formatDate(guide.updatedAt || guide.createdAt)}</span>
+            ${isAdmin() ? `<button id="btnDeleteTeamGuideFromViewer" class="danger ghost" type="button">Xóa ảnh này</button>` : ''}
+          </div>
+        </div>
+      </div>
+    `;
+    document.querySelector('#btnDeleteTeamGuideFromViewer')?.addEventListener('click', async () => {
+      await deleteTeamGuide(guide.id);
+      el.teamGuideViewerDialog.close();
+    });
+    el.teamGuideViewerDialog.showModal();
+  } catch (error) {
+    showToast(error.message || 'Không mở được đội hình.', 'error');
+  }
+}
+
+async function handleTeamGuideImageUpload(event) {
+  const file = event.target.files?.[0];
+  event.target.value = '';
+  if (!file) return;
+  if (!isAdmin()) return showToast('Chỉ admin được up ảnh đội hình.', 'error');
+  if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) {
+    return showToast('Ảnh đội hình chỉ nhận PNG, JPG hoặc WebP.', 'error');
+  }
+  if (file.size > MAX_TEAM_GUIDE_SOURCE_BYTES) {
+    return showToast('Ảnh gốc tối đa 3MB. Hãy chọn ảnh nhỏ hơn.', 'error');
+  }
+
+  try {
+    const [imageData, thumbData] = await Promise.all([
+      resizeImageFitFile(file, TEAM_GUIDE_IMAGE_MAX_WIDTH, TEAM_GUIDE_IMAGE_MAX_HEIGHT, MAX_TEAM_GUIDE_IMAGE_BYTES, 'Ảnh đội hình'),
+      resizeImageFitFile(file, TEAM_GUIDE_THUMB_MAX_WIDTH, TEAM_GUIDE_THUMB_MAX_HEIGHT, MAX_TEAM_GUIDE_THUMB_BYTES, 'Ảnh thu nhỏ đội hình')
+    ]);
+    pendingTeamGuideImageData = imageData;
+    pendingTeamGuideThumbData = thumbData;
+    el.teamGuideImageStatus.textContent = 'Đã chọn và nén ảnh. Bấm Lưu đội hình để đăng.';
+    el.teamGuidePreview.classList.remove('hidden');
+    el.teamGuidePreview.innerHTML = `<img src="${escapeAttr(thumbData)}" alt="Preview đội hình" />`;
+  } catch (error) {
+    showToast(error.message || 'Không xử lý được ảnh đội hình.', 'error');
+  }
+}
+
+async function saveTeamGuide() {
+  if (!isAdmin()) return showToast('Chỉ admin được lưu đội hình gợi ý.', 'error');
+  if (!pendingTeamGuideImageData || !pendingTeamGuideThumbData) {
+    return showToast('Hãy chọn ảnh đội hình trước khi lưu.', 'error');
+  }
+
+  try {
+    const result = await api('/api/team-guides', {
+      method: 'POST',
+      body: {
+        title: el.teamGuideTitle.value,
+        note: el.teamGuideNote.value,
+        imageData: pendingTeamGuideImageData,
+        thumbData: pendingTeamGuideThumbData
+      }
+    });
+    showToast(result.message || 'Đã lưu đội hình gợi ý.');
+    clearTeamGuideForm();
+    await loadTeamGuides();
+    renderTeamGuidesDialog();
+  } catch (error) {
+    showToast(error.message || 'Không lưu được đội hình gợi ý.', 'error');
+  }
+}
+
+function clearTeamGuideForm() {
+  pendingTeamGuideImageData = '';
+  pendingTeamGuideThumbData = '';
+  el.teamGuideForm?.reset();
+  if (el.teamGuideImageStatus) el.teamGuideImageStatus.textContent = 'Chưa chọn ảnh.';
+  if (el.teamGuidePreview) {
+    el.teamGuidePreview.classList.add('hidden');
+    el.teamGuidePreview.innerHTML = '';
+  }
+}
+
+async function deleteTeamGuide(id) {
+  if (!isAdmin()) return showToast('Chỉ admin được xóa đội hình gợi ý.', 'error');
+  if (!confirm('Xóa ảnh đội hình gợi ý này?')) return;
+  try {
+    await api(`/api/team-guides/${encodeURIComponent(id)}`, { method: 'DELETE' });
+    showToast('Đã xóa đội hình gợi ý.');
+    await loadTeamGuides();
+    renderTeamGuidesDialog();
+  } catch (error) {
+    showToast(error.message || 'Không xóa được đội hình gợi ý.', 'error');
+  }
+}
+
+
 async function loadDonationPublic() {
   try {
     const data = await apiPublic('/api/settings/public');
@@ -499,6 +692,18 @@ async function loadAll() {
   await Promise.all([loadRoles(), loadMods(), loadCreatures(), loadDonationPublic()]);
 }
 
+async function goHome() {
+  selectedCreature = null;
+  selectedBuilder = null;
+  selectedBuilds = [];
+  selectedBuildId = '';
+  if (el.searchInput) el.searchInput.value = '';
+  if (el.roleFilter) el.roleFilter.value = '';
+  setRoute('', '', false);
+  await loadCreatures();
+  renderDetail();
+}
+
 async function loadRoles() {
   try {
     const data = await api('/api/beasts/roles');
@@ -586,7 +791,13 @@ function renderRoleFilter() {
 async function loadCreatures() {
   try {
     const params = new URLSearchParams();
-    if (el.searchInput.value.trim()) params.set('search', el.searchInput.value.trim());
+    const searchText = el.searchInput.value.trim();
+    if (searchText) params.set('search', searchText);
+
+    // Trang chủ chỉ hiện Pokémon đã có ít nhất 1 build.
+    // User thường khi search cũng chỉ thấy Pokémon đã build; Cameo/mod/admin vẫn search được tên chưa build để tạo build mới.
+    if (!searchText || !canCreateBuild()) params.set('builtOnly', 'true');
+
     const data = await api(`/api/creatures?${params.toString()}`);
     creatures = data.creatures || [];
     renderCreatureSuggestions();
@@ -598,9 +809,14 @@ async function loadCreatures() {
 
 function renderList() {
   if (!creatures.length) {
-    el.petList.innerHTML = canManageCreatureNames()
-      ? '<p class="muted">Chưa có tên linh thú. Bấm “Quản lý tên linh thú” để thêm.</p>'
-      : '<p class="muted">Không tìm thấy tên linh thú. Hãy báo admin/mod thêm tên trước.</p>';
+    const searchText = el.searchInput.value.trim();
+    if (!searchText) {
+      el.petList.innerHTML = '<p class="muted">Chưa có Pokémon nào được build nên chưa hiển thị ở trang chủ.</p>';
+    } else {
+      el.petList.innerHTML = canCreateBuild()
+        ? '<p class="muted">Không tìm thấy tên linh thú. Cameo cần chọn tên đã có; mod/admin có thể thêm trong “Quản lý tên linh thú”.</p>'
+        : '<p class="muted">Không tìm thấy Pokémon đã có build phù hợp.</p>';
+    }
     return;
   }
 
@@ -784,12 +1000,7 @@ function renderBuilderDetail() {
     </section>
   `;
 
-  document.querySelector('#btnBackHome')?.addEventListener('click', () => {
-    selectedBuilder = null;
-    selectedBuilds = [];
-    selectedBuildId = '';
-    renderDetail();
-  });
+  document.querySelector('#btnBackHome')?.addEventListener('click', goHome);
 
   document.querySelectorAll('.builder-build-card').forEach(button => {
     button.addEventListener('click', async () => {
@@ -934,7 +1145,6 @@ function buildDetailHtml(build) {
     </div>
 
     <div class="info-grid">
-      <div class="info-box"><span>Hệ / thuộc tính (Element)</span><strong>${escapeHtml(build.element || 'Chưa nhập')}</strong></div>
       <div class="info-box"><span>Tính cách (Nature)</span><strong>${escapeHtml(build.nature || 'Chưa nhập')}</strong></div>
       <div class="info-box builder-info"><span>Người build</span><strong>${avatarHtml(builderProfile(build), 'avatar-sm')} ${escapeHtml(builderLabel(build))}</strong></div>
       <div class="info-box"><span>Cập nhật</span><strong>${formatDate(build.updatedAt)}</strong></div>
@@ -1002,7 +1212,6 @@ function openBuildDialog(build = null) {
   if (build) {
     el.dialogTitle.textContent = 'Sửa build linh thú';
     el.role.value = build.role || '';
-    el.element.value = build.element || '';
     el.nature.value = build.nature || '';
     el.passive.value = build.passive || '';
     el.notes.value = build.notes || '';
@@ -1042,7 +1251,6 @@ function buildPayloadFromForm() {
     creatureId: el.creatureId.value,
     name: el.name.value,
     role: el.role.value,
-    element: el.element.value,
     nature: el.nature.value,
     passive: el.passive.value,
     skills,
@@ -1130,7 +1338,6 @@ function copyBuild(build) {
     `Link linh thú: ${creatureLink(build.creature?.id || selectedCreature?.id, build.id)}`,
     `Người build: ${builderLabel(build)}`,
     `Vai trò: ${build.role || 'Khác'}`,
-    `Hệ: ${build.element || 'Chưa nhập'}`,
     `Tính cách (Nature): ${build.nature || 'Chưa nhập'}`,
     `Nội tại (Ability): ${build.passive || 'Chưa nhập'}`,
     'Kỹ năng (Skills):',
@@ -1155,7 +1362,7 @@ async function exportBuilds() {
     a.download = `pocket-champion-backup-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
-    showToast(`Đã tải backup: ${data.counts?.creatures || 0} linh thú, ${data.counts?.builds || 0} build.`);
+    showToast(`Đã tải backup: ${data.counts?.creatures || 0} linh thú, ${data.counts?.builds || 0} build, ${data.counts?.teamGuides || 0} ảnh đội hình.`);
   } catch (error) {
     showToast(error.message, 'error');
   }
@@ -1642,6 +1849,33 @@ async function resizeSquareImageFile(file, size, maxBytes, label = 'Ảnh') {
 
   throw new Error(`${label} vẫn quá lớn sau khi nén. Hãy chọn ảnh đơn giản hơn.`);
 }
+
+async function resizeImageFitFile(file, maxWidth, maxHeight, maxBytes, label = 'Ảnh') {
+  const img = await loadImageFromFile(file);
+  const sourceWidth = img.naturalWidth || img.width;
+  const sourceHeight = img.naturalHeight || img.height;
+  const ratio = Math.min(1, maxWidth / sourceWidth, maxHeight / sourceHeight);
+  const width = Math.max(1, Math.round(sourceWidth * ratio));
+  const height = Math.max(1, Math.round(sourceHeight * ratio));
+
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, width, height);
+  ctx.drawImage(img, 0, 0, width, height);
+
+  for (const quality of [0.9, 0.82, 0.74, 0.66, 0.58, 0.5, 0.42, 0.35]) {
+    const blob = await canvasToBlob(canvas, 'image/jpeg', quality);
+    if (blob.size <= maxBytes) {
+      return blobToDataUrl(blob);
+    }
+  }
+
+  throw new Error(`${label} vẫn quá lớn sau khi nén. Hãy chọn ảnh nhỏ hoặc ít chi tiết hơn.`);
+}
+
 
 async function resizeAvatarFile(file) {
   return resizeSquareImageFile(file, AVATAR_SIZE, MAX_AVATAR_OUTPUT_BYTES, 'Ảnh avatar');

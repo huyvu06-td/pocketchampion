@@ -15,6 +15,7 @@ const beastRoutes = require('./src/routes/beasts');
 const userRoutes = require('./src/routes/users');
 const creatureRoutes = require('./src/routes/creatures');
 const settingRoutes = require('./src/routes/settings');
+const teamGuideRoutes = require('./src/routes/teamGuides');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -42,6 +43,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/creatures', creatureRoutes);
 app.use('/api/beasts', beastRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/team-guides', teamGuideRoutes);
 
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));

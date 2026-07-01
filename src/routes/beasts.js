@@ -3,9 +3,10 @@ const mongoose = require('mongoose');
 const { Beast, canViewerEdit } = require('../models/Beast');
 const { Creature, normalizeCreatureName, creatureKey } = require('../models/Creature');
 const { User, USER_ROLES } = require('../models/User');
+const { TeamGuide } = require('../models/TeamGuide');
 const crypto = require('crypto');
 const { requireAuth, requireRole } = require('../middleware/auth');
-const { normalizeBeastPayload } = require('../utils/validate');
+const { normalizeBeastPayload, cleanText } = require('../utils/validate');
 
 const router = express.Router();
 const USER_SELECT = 'username displayName gameName role avatarData';
@@ -74,7 +75,6 @@ function buildBackupJSON(build) {
     creatureName: creature?.name || build.name,
     name: creature?.name || build.name,
     role: build.role || 'Khác',
-    element: build.element || '',
     nature: build.nature || '',
     passive: build.passive || '',
     skills: build.skills || [],
@@ -88,6 +88,19 @@ function buildBackupJSON(build) {
     updatedAt: build.updatedAt
   };
 }
+
+function teamGuideBackupJSON(guide) {
+  return {
+    id: guide._id.toString(),
+    title: guide.title || '',
+    note: guide.note || '',
+    thumbData: guide.thumbData || '',
+    imageData: guide.imageData || '',
+    createdAt: guide.createdAt,
+    updatedAt: guide.updatedAt
+  };
+}
+
 
 async function findOrCreateBackupUser(userInfo, fallbackUser) {
   const username = safeUsername(userInfo?.username || fallbackUser.username);
@@ -130,7 +143,6 @@ router.get('/', async (req, res) => {
   } else if (search) {
     filter.$or = [
       { name: { $regex: escapeRegex(search), $options: 'i' } },
-      { element: { $regex: escapeRegex(search), $options: 'i' } },
       { nature: { $regex: escapeRegex(search), $options: 'i' } },
       { role: { $regex: escapeRegex(search), $options: 'i' } }
     ];
@@ -152,13 +164,14 @@ router.get('/roles', async (req, res) => {
 });
 
 router.get('/backup/export', requireRole('admin'), async (req, res) => {
-  const [creatures, builds] = await Promise.all([
+  const [creatures, builds, teamGuides] = await Promise.all([
     Creature.find().sort({ name: 1 }),
     Beast.find()
       .populate('creature')
       .populate('createdBy', USER_SELECT)
       .populate('updatedBy', USER_SELECT)
-      .sort({ name: 1, updatedAt: -1 })
+      .sort({ name: 1, updatedAt: -1 }),
+    TeamGuide.find().sort({ updatedAt: -1, createdAt: -1 })
   ]);
 
   const builders = new Map();
@@ -169,13 +182,14 @@ router.get('/backup/export', requireRole('admin'), async (req, res) => {
 
   res.json({
     backupType: 'pocket-champion-build-backup',
-    version: '2.13',
+    version: '2.17',
     exportedAt: new Date().toISOString(),
-    note: 'File này dùng để khôi phục tên linh thú và bài build. Không chứa mật khẩu gốc.',
+    note: 'File này dùng để khôi phục tên linh thú, bài build và ảnh đội hình gợi ý. Không chứa mật khẩu gốc.',
     counts: {
       creatures: creatures.length,
       builds: builds.length,
-      builders: builders.size
+      builders: builders.size,
+      teamGuides: teamGuides.length
     },
     builders: Array.from(builders.values()),
     creatures: creatures.map(creature => ({
@@ -187,7 +201,8 @@ router.get('/backup/export', requireRole('admin'), async (req, res) => {
       createdAt: creature.createdAt,
       updatedAt: creature.updatedAt
     })),
-    builds: builds.map(buildBackupJSON)
+    builds: builds.map(buildBackupJSON),
+    teamGuides: teamGuides.map(teamGuideBackupJSON)
   });
 });
 
@@ -204,13 +219,14 @@ router.post('/backup/import', requireRole('admin'), async (req, res) => {
     const rawCreatures = Array.isArray(backup.creatures) ? backup.creatures : [];
     const rawBuilds = Array.isArray(backup.builds) ? backup.builds : Array.isArray(backup.beasts) ? backup.beasts : Array.isArray(backup) ? backup : [];
     const rawBuilders = Array.isArray(backup.builders) ? backup.builders : [];
+    const rawTeamGuides = Array.isArray(backup.teamGuides) ? backup.teamGuides : [];
 
-    if (!rawCreatures.length && !rawBuilds.length) {
-      return res.status(400).json({ message: 'File backup không có dữ liệu linh thú hoặc build.' });
+    if (!rawCreatures.length && !rawBuilds.length && !rawTeamGuides.length) {
+      return res.status(400).json({ message: 'File backup không có dữ liệu linh thú, build hoặc đội hình gợi ý.' });
     }
 
     if (clearExisting) {
-      await Promise.all([Beast.deleteMany({}), Creature.deleteMany({})]);
+      await Promise.all([Beast.deleteMany({}), Creature.deleteMany({}), TeamGuide.deleteMany({})]);
     }
 
     const builderMap = new Map();
@@ -224,6 +240,8 @@ router.post('/backup/import', requireRole('admin'), async (req, res) => {
     let creaturesSkipped = 0;
     let buildsCreated = 0;
     let buildsUpdated = 0;
+    let teamGuidesCreated = 0;
+    let teamGuidesUpdated = 0;
     const errors = [];
 
     for (const item of rawCreatures) {
@@ -282,12 +300,47 @@ router.post('/backup/import', requireRole('admin'), async (req, res) => {
       }
     }
 
+
+    for (const [index, item] of rawTeamGuides.entries()) {
+      try {
+        const title = cleanText(item?.title);
+        const note = cleanText(item?.note).slice(0, 500);
+        const thumbData = cleanText(item?.thumbData);
+        const imageData = cleanText(item?.imageData);
+        if (!title || !thumbData || !imageData) continue;
+
+        const existing = await TeamGuide.findOne({ title });
+        if (existing) {
+          existing.note = note;
+          existing.thumbData = thumbData;
+          existing.imageData = imageData;
+          existing.updatedBy = req.user._id;
+          await existing.save();
+          teamGuidesUpdated += 1;
+        } else {
+          await TeamGuide.create({
+            title: title.slice(0, 120),
+            note,
+            thumbData,
+            imageData,
+            createdBy: req.user._id,
+            updatedBy: req.user._id
+          });
+          teamGuidesCreated += 1;
+        }
+      } catch (error) {
+        errors.push({ type: 'teamGuide', index: index + 1, title: item?.title || '', message: error.message });
+      }
+    }
+
     res.json({
-      message: `Khôi phục xong: thêm ${creaturesCreated} tên linh thú, thêm ${buildsCreated} build, cập nhật ${buildsUpdated} build, lỗi ${errors.length}.`,
+      message: `Khôi phục xong: thêm ${creaturesCreated} tên linh thú, thêm ${buildsCreated} build, cập nhật ${buildsUpdated} build, thêm ${teamGuidesCreated} ảnh đội hình, lỗi ${errors.length}.`,
       creaturesCreated,
       creaturesSkipped,
       buildsCreated,
       buildsUpdated,
+      teamGuidesCreated,
+      teamGuidesUpdated,
       errors
     });
   } catch (error) {

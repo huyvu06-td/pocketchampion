@@ -63,7 +63,9 @@
         <div class="official-links hero-links" data-official-links></div>
       </div>
       <div class="hero-actions">
+        <button id="btnHome" class="ghost" type="button">🏠 Trang chủ</button>
         <button id="btnDonate" class="donate-button hidden" type="button">💖 Donate</button>
+        <button id="btnTeamGuides" class="primary" type="button">Đội hình gợi ý của các hệ</button>
         <div id="currentUserMini" class="user-mini"><span id="currentUserAvatar" class="avatar avatar-sm"></span><span id="userBadge" class="user-badge"></span></div>
         <label id="avatarLabel" class="ghost avatar-upload hidden">
           Đổi avatar
@@ -155,14 +157,9 @@
         </label>
       </div>
 
-      <div class="grid two">
-        <label>Hệ / thuộc tính (Element)
-          <input id="element" placeholder="Ví dụ: Siêu linh, Lửa, Nước..." />
-        </label>
-        <label>Tính cách (Nature)
-          <input id="nature" placeholder="Ví dụ: Nhút nhát, Cứng rắn..." />
-        </label>
-      </div>
+      <label>Tính cách (Nature)
+        <input id="nature" placeholder="Ví dụ: Nhút nhát, Cứng rắn..." />
+      </label>
 
       <label>Nội tại (Ability)
         <textarea id="passive" rows="3" placeholder="Mô tả nội tại / Ability của linh thú"></textarea>
@@ -353,6 +350,68 @@
         </form>
       </section>
     </div>
+  </dialog>
+
+
+  <dialog id="teamGuidesDialog" class="dialog team-guides-dialog">
+    <div class="dialog-head">
+      <div>
+        <p class="eyebrow">Team Guide</p>
+        <h2>Đội hình gợi ý của các hệ</h2>
+      </div>
+      <button type="button" id="btnCloseTeamGuides" class="icon-btn" aria-label="Đóng">×</button>
+    </div>
+
+    <div class="team-guides-body">
+      <section id="teamGuideAdminPanel" class="form-section hidden">
+        <div class="section-title">
+          <h3>Thêm ảnh đội hình</h3>
+          <p>Chỉ admin được up ảnh. Người chơi có thể click vào ảnh để xem rõ đội hình.</p>
+        </div>
+        <form id="teamGuideForm" class="team-guide-form">
+          <div class="grid two">
+            <label>Chú thích đội hình
+              <input id="teamGuideTitle" maxlength="120" placeholder="Ví dụ: Đội hình hệ Lửa, team PvP tốc độ..." required />
+            </label>
+            <label>Ghi chú ngắn
+              <input id="teamGuideNote" maxlength="500" placeholder="Không bắt buộc" />
+            </label>
+          </div>
+          <div class="team-guide-upload-row">
+            <label class="file-label ghost">
+              Chọn ảnh đội hình
+              <input id="teamGuideImageInput" type="file" accept="image/png,image/jpeg,image/webp" />
+            </label>
+            <span id="teamGuideImageStatus" class="tiny-note">Chưa chọn ảnh.</span>
+          </div>
+          <div id="teamGuidePreview" class="team-guide-preview hidden"></div>
+          <div class="dialog-actions">
+            <button id="btnClearTeamGuideForm" type="button" class="ghost">Xóa form</button>
+            <div class="spacer"></div>
+            <button type="submit" class="primary">Lưu đội hình</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="form-section">
+        <div class="section-title">
+          <h3>Thư mục ảnh đội hình</h3>
+          <p>Bấm vào ảnh để xem đội hình đầy đủ.</p>
+        </div>
+        <div id="teamGuidesGrid" class="team-guides-grid"></div>
+      </section>
+    </div>
+  </dialog>
+
+  <dialog id="teamGuideViewerDialog" class="dialog team-guide-viewer-dialog">
+    <div class="dialog-head">
+      <div>
+        <p class="eyebrow">Xem đội hình</p>
+        <h2 id="teamGuideViewerTitle">Đội hình</h2>
+      </div>
+      <button type="button" id="btnCloseTeamGuideViewer" class="icon-btn" aria-label="Đóng">×</button>
+    </div>
+    <div id="teamGuideViewer" class="team-guide-viewer"></div>
   </dialog>
 
   <script src="site-config.js"></script>
