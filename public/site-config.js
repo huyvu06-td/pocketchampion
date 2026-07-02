@@ -6,7 +6,7 @@ window.POCKET_CHAMPION_TEXT = {
   authTitle: 'Tra cứu build pokemon',
   authSubtitle: 'Đăng nhập hoặc tự tạo tài khoản để tra cứu.',
   heroTitle: 'Tra cứu build pokemon',
-  heroSubtitle: 'Admin/mod có thể thêm tên linh thú.'
+  heroSubtitle: 'Sử dụng máy tính hoặc vào cài đặt chọn trang cho máy tính để có trải nghiệm tốt nhất'
 };
 
 // Cấu hình các link chính thức của web POCKET CHAMPION.
