@@ -9,6 +9,297 @@ const STAT_LABELS = {
   sdef: 'SDEF',
   spe: 'SPE'
 };
+const STAT_COLORS = {
+  hp: ['#22c55e', '#86efac'],
+  atk: ['#ef4444', '#fca5a5'],
+  satk: ['#8b5cf6', '#c4b5fd'],
+  def: ['#f59e0b', '#fde68a'],
+  sdef: ['#0ea5e9', '#7dd3fc'],
+  spe: ['#ec4899', '#f9a8d4']
+};
+const POKEMON_ITEM_NAMES = [
+  'Ability Shield',
+  'Absorb Bulb',
+  'Adrenaline Orb',
+  'Air Balloon',
+  'Amulet Coin',
+  'Assault Vest',
+  'Big Root',
+  'Binding Band',
+  'Black Belt',
+  'Black Glasses',
+  'Black Sludge',
+  'Booster Energy',
+  'Bright Powder',
+  'Cell Battery',
+  'Charcoal',
+  'Choice Band',
+  'Choice Scarf',
+  'Choice Specs',
+  'Clear Amulet',
+  'Covert Cloak',
+  'Damp Rock',
+  'Destiny Knot',
+  'Dragon Fang',
+  'Eject Button',
+  'Eject Pack',
+  'Electric Seed',
+  'Eviolite',
+  'Expert Belt',
+  'Flame Orb',
+  'Float Stone',
+  'Focus Band',
+  'Focus Sash',
+  'Grassy Seed',
+  'Grip Claw',
+  'Hard Stone',
+  'Heat Rock',
+  'Heavy-Duty Boots',
+  'Icy Rock',
+  'King\'s Rock',
+  'Lagging Tail',
+  'Leftovers',
+  'Life Orb',
+  'Light Ball',
+  'Light Clay',
+  'Loaded Dice',
+  'Lucky Egg',
+  'Luminous Moss',
+  'Magnet',
+  'Mental Herb',
+  'Metal Coat',
+  'Metronome',
+  'Miracle Seed',
+  'Mirror Herb',
+  'Misty Seed',
+  'Muscle Band',
+  'Mystic Water',
+  'Never-Melt Ice',
+  'Protective Pads',
+  'Punching Glove',
+  'Quick Claw',
+  'Razor Claw',
+  'Razor Fang',
+  'Red Card',
+  'Ring Target',
+  'Rocky Helmet',
+  'Room Service',
+  'Safety Goggles',
+  'Scope Lens',
+  'Sharp Beak',
+  'Shed Shell',
+  'Shell Bell',
+  'Silk Scarf',
+  'Silver Powder',
+  'Smooth Rock',
+  'Snowball',
+  'Soft Sand',
+  'Spell Tag',
+  'Sticky Barb',
+  'Terrain Extender',
+  'Throat Spray',
+  'Toxic Orb',
+  'Twisted Spoon',
+  'Utility Umbrella',
+  'Weakness Policy',
+  'White Herb',
+  'Wide Lens',
+  'Wise Glasses',
+  'Zoom Lens',
+  'Aguav Berry',
+  'Apicot Berry',
+  'Aspear Berry',
+  'Babiri Berry',
+  'Charti Berry',
+  'Cheri Berry',
+  'Chesto Berry',
+  'Chilan Berry',
+  'Chople Berry',
+  'Coba Berry',
+  'Colbur Berry',
+  'Custap Berry',
+  'Enigma Berry',
+  'Figy Berry',
+  'Ganlon Berry',
+  'Grepa Berry',
+  'Haban Berry',
+  'Hondew Berry',
+  'Iapapa Berry',
+  'Jaboca Berry',
+  'Kasib Berry',
+  'Kebia Berry',
+  'Kee Berry',
+  'Kelpsy Berry',
+  'Lansat Berry',
+  'Leppa Berry',
+  'Liechi Berry',
+  'Lum Berry',
+  'Mago Berry',
+  'Maranga Berry',
+  'Micle Berry',
+  'Occa Berry',
+  'Oran Berry',
+  'Passho Berry',
+  'Payapa Berry',
+  'Pecha Berry',
+  'Persim Berry',
+  'Petaya Berry',
+  'Qualot Berry',
+  'Rawst Berry',
+  'Rindo Berry',
+  'Roseli Berry',
+  'Rowap Berry',
+  'Salac Berry',
+  'Shuca Berry',
+  'Sitrus Berry',
+  'Starf Berry',
+  'Tanga Berry',
+  'Wacan Berry',
+  'Wiki Berry',
+  'Yache Berry',
+  'Adamant Mint',
+  'Bold Mint',
+  'Brave Mint',
+  'Calm Mint',
+  'Careful Mint',
+  'Gentle Mint',
+  'Hasty Mint',
+  'Impish Mint',
+  'Jolly Mint',
+  'Lax Mint',
+  'Lonely Mint',
+  'Mild Mint',
+  'Modest Mint',
+  'Naive Mint',
+  'Naughty Mint',
+  'Quiet Mint',
+  'Rash Mint',
+  'Relaxed Mint',
+  'Sassy Mint',
+  'Serious Mint',
+  'Timid Mint',
+  'Bug Gem',
+  'Dark Gem',
+  'Dragon Gem',
+  'Electric Gem',
+  'Fairy Gem',
+  'Fighting Gem',
+  'Fire Gem',
+  'Flying Gem',
+  'Ghost Gem',
+  'Grass Gem',
+  'Ground Gem',
+  'Ice Gem',
+  'Normal Gem',
+  'Poison Gem',
+  'Psychic Gem',
+  'Rock Gem',
+  'Steel Gem',
+  'Water Gem',
+  'Bug Memory',
+  'Dark Memory',
+  'Dragon Memory',
+  'Electric Memory',
+  'Fairy Memory',
+  'Fighting Memory',
+  'Fire Memory',
+  'Flying Memory',
+  'Ghost Memory',
+  'Grass Memory',
+  'Ground Memory',
+  'Ice Memory',
+  'Poison Memory',
+  'Psychic Memory',
+  'Rock Memory',
+  'Steel Memory',
+  'Water Memory',
+  'Burn Drive',
+  'Chill Drive',
+  'Douse Drive',
+  'Shock Drive',
+  'Draco Plate',
+  'Dread Plate',
+  'Earth Plate',
+  'Fist Plate',
+  'Flame Plate',
+  'Icicle Plate',
+  'Insect Plate',
+  'Iron Plate',
+  'Meadow Plate',
+  'Mind Plate',
+  'Pixie Plate',
+  'Sky Plate',
+  'Splash Plate',
+  'Spooky Plate',
+  'Stone Plate',
+  'Toxic Plate',
+  'Zap Plate',
+  'Blue Orb',
+  'Red Orb',
+  'Griseous Orb',
+  'Griseous Core',
+  'Rusted Shield',
+  'Rusted Sword',
+  'Adamant Crystal',
+  'Lustrous Globe',
+  'Soul Dew',
+  'Light Stone',
+  'Dark Stone',
+  'Aloraichium Z',
+  'Buginium Z',
+  'Darkinium Z',
+  'Decidium Z',
+  'Dragonium Z',
+  'Eevium Z',
+  'Electrium Z',
+  'Fairium Z',
+  'Fightinium Z',
+  'Firium Z',
+  'Flyinium Z',
+  'Ghostium Z',
+  'Grassium Z',
+  'Groundium Z',
+  'Icium Z',
+  'Incinium Z',
+  'Kommonium Z',
+  'Lunalium Z',
+  'Lycanium Z',
+  'Marshadium Z',
+  'Mewnium Z',
+  'Mimikium Z',
+  'Normalium Z',
+  'Pikanium Z',
+  'Pikashunium Z',
+  'Poisonium Z',
+  'Primarium Z',
+  'Psychium Z',
+  'Rockium Z',
+  'Snorlium Z',
+  'Solganium Z',
+  'Steelium Z',
+  'Tapunium Z',
+  'Ultranecrozium Z',
+  'Waterium Z',
+  'Power Anklet',
+  'Power Band',
+  'Power Belt',
+  'Power Bracer',
+  'Power Lens',
+  'Power Weight',
+  'Macho Brace',
+  'Soothe Bell',
+  'Smoke Ball',
+  'Cleanse Tag',
+  'Everstone',
+  'Lucky Punch',
+  'Stick',
+  'Leek',
+  'Thick Club',
+  'Deep Sea Scale',
+  'Deep Sea Tooth',
+  'Quick Powder',
+  'Metal Powder'
+];
 const TOKEN_KEY = 'pc_linhthu_token_v4';
 const MAX_AVATAR_SOURCE_BYTES = 2 * 1024 * 1024;
 const MAX_AVATAR_OUTPUT_BYTES = 256 * 1024;
@@ -101,6 +392,7 @@ const el = {
   btnSearch: document.querySelector('#btnSearch'),
   creatureSuggestions: document.querySelector('#creatureSuggestions'),
   skillSuggestions: document.querySelector('#skillSuggestions'),
+  itemSuggestions: document.querySelector('#itemSuggestions'),
   homeLeaderboard: document.querySelector('#homeLeaderboard'),
   roleFilter: document.querySelector('#roleFilter'),
   modList: document.querySelector('#modList'),
@@ -119,6 +411,7 @@ const el = {
   name: document.querySelector('#name'),
   role: document.querySelector('#role'),
   nature: document.querySelector('#nature'),
+  item: document.querySelector('#item'),
   passive: document.querySelector('#passive'),
   skillsWrap: document.querySelector('#skillsWrap'),
   hp: document.querySelector('#hp'),
@@ -173,6 +466,7 @@ function init() {
   wireEvents();
   renderSiteTexts();
   renderOfficialLinks();
+  renderItemSuggestions();
   loadDonationPublic();
   restoreSession();
 }
@@ -994,6 +1288,13 @@ function renderSkillSuggestions() {
     .join('');
 }
 
+function renderItemSuggestions() {
+  if (!el.itemSuggestions) return;
+  el.itemSuggestions.innerHTML = POKEMON_ITEM_NAMES
+    .map(item => `<option value="${escapeAttr(item)}"></option>`)
+    .join('');
+}
+
 function skillPoolHtml() {
   return '';
 }
@@ -1138,7 +1439,7 @@ function renderBuilderDetail() {
           <button class="builder-build-card" data-creature-id="${escapeAttr(build.creature?.id || '')}" data-build-id="${escapeAttr(build.id)}" type="button">
             <div>
               <h4>${escapeHtml(build.name)}</h4>
-              <p>${escapeHtml(build.role || 'Khác')} · ${escapeHtml(build.nature || 'Chưa nhập Nature')}</p>
+              <p>${escapeHtml(build.role || 'Khác')} · ${escapeHtml(build.nature || 'Chưa nhập Nature')}${build.item ? ` · Item: ${escapeHtml(build.item)}` : ''}</p>
             </div>
             <span class="badge">Berry ${Number(build.statTotal || 0)}/510</span>
           </button>
@@ -1247,7 +1548,7 @@ function buildCardHtml(build) {
         ${avatarHtml(builder, 'avatar-sm')}
         <div>
           <h4>${roleNameHtml(builder, builderLabel(build))}</h4>
-          <p>${escapeHtml(build.role || 'Khác')} · ${escapeHtml(build.nature || 'Chưa nhập Nature')}</p>
+          <p>${escapeHtml(build.role || 'Khác')} · ${escapeHtml(build.nature || 'Chưa nhập Nature')}${build.item ? ` · Item: ${escapeHtml(build.item)}` : ''}</p>
         </div>
       </div>
       <div class="build-card-side">
@@ -1276,6 +1577,7 @@ function buildDetailHtml(build) {
         <div class="pet-meta">
           <span class="badge strong-badge builder-badge">${avatarHtml(builderProfile(build), 'avatar-xs')} Người build: ${roleNameHtml(builderProfile(build), builderLabel(build))}</span>
           <span class="badge">${escapeHtml(build.role || 'Khác')}</span>
+          ${build.item ? `<span class="badge item-badge">Item: ${escapeHtml(build.item)}</span>` : ''}
           <span class="badge">Berry ${Number(build.statTotal || 0)}/510</span>
         </div>
       </div>
@@ -1288,6 +1590,7 @@ function buildDetailHtml(build) {
 
     <div class="info-grid">
       <div class="info-box"><span>Tính cách (Nature)</span><strong>${escapeHtml(build.nature || 'Chưa nhập')}</strong></div>
+      <div class="info-box"><span>Vật phẩm (Item)</span><strong>${escapeHtml(build.item || 'Chưa nhập')}</strong></div>
       <div class="info-box builder-info"><span>Người build</span><strong>${avatarHtml(builderProfile(build), 'avatar-sm')} ${roleNameHtml(builderProfile(build), builderLabel(build))}</strong></div>
       <div class="info-box"><span>Cập nhật</span><strong>${formatDate(build.updatedAt)}</strong></div>
     </div>
@@ -1327,11 +1630,13 @@ function buildDetailHtml(build) {
 }
 
 function statRow(key, value) {
-  const percent = Math.min(100, Math.round((Number(value || 0) / MAX_TOTAL_STATS) * 100));
+  const numericValue = Number(value || 0);
+  const percent = Math.min(100, Math.round((numericValue / MAX_TOTAL_STATS) * 100));
+  const [from, to] = STAT_COLORS[key] || ['#22d3ee', '#7c5cff'];
   return `
-    <div class="stat-row">
-      <div><strong>${STAT_LABELS[key]}</strong><span>${Number(value || 0)}</span></div>
-      <div class="bar small"><span style="width:${percent}%"></span></div>
+    <div class="stat-row stat-row-${escapeAttr(key)}">
+      <div><strong>${STAT_LABELS[key]}</strong><span>${numericValue}</span></div>
+      <div class="bar small stat-bar"><span style="width:${percent}%; background: linear-gradient(90deg, ${from}, ${to}); box-shadow: 0 0 18px ${from}66;"></span></div>
     </div>
   `;
 }
@@ -1355,6 +1660,7 @@ function openBuildDialog(build = null) {
     el.dialogTitle.textContent = 'Sửa build linh thú';
     el.role.value = build.role || '';
     el.nature.value = build.nature || '';
+    el.item.value = build.item || '';
     el.passive.value = build.passive || '';
     el.notes.value = build.notes || '';
     STAT_KEYS.forEach(key => { el[key].value = build.stats?.[key] || 0; });
@@ -1362,6 +1668,7 @@ function openBuildDialog(build = null) {
     el.btnDelete.classList.toggle('hidden', !build.canDelete);
   } else {
     el.dialogTitle.textContent = `Build ${selectedCreature.name}`;
+    el.item.value = '';
     STAT_KEYS.forEach(key => { el[key].value = 0; });
     skillSlots().forEach((skill, index) => addSkillRow(skill, index));
     el.btnDelete.classList.add('hidden');
@@ -1394,6 +1701,7 @@ function buildPayloadFromForm() {
     name: el.name.value,
     role: el.role.value,
     nature: el.nature.value,
+    item: el.item.value,
     passive: el.passive.value,
     skills,
     stats: Object.fromEntries(STAT_KEYS.map(key => [key, Number(el[key].value || 0)])),
@@ -1481,6 +1789,7 @@ function copyBuild(build) {
     `Người build: ${builderLabel(build)}`,
     `Vai trò: ${build.role || 'Khác'}`,
     `Tính cách (Nature): ${build.nature || 'Chưa nhập'}`,
+    `Vật phẩm (Item): ${build.item || 'Chưa nhập'}`,
     `Nội tại (Ability): ${build.passive || 'Chưa nhập'}`,
     'Kỹ năng (Skills):',
     ...skillSlots(build.skills).map((skill, index) => `${index + 1}. ${skill.name || 'Chưa nhập'}`),
