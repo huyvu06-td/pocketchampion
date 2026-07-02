@@ -78,6 +78,57 @@ router.get('/pokemon/stats', async (req, res) => {
   res.json({ ...pokemonCatalogStats(), existing });
 });
 
+
+function publicUser(user) {
+  if (!user) return null;
+  return {
+    id: user._id?.toString?.() || user.id || '',
+    username: user.username || '',
+    displayName: user.displayName || '',
+    gameName: user.gameName || '',
+    role: user.role || 'user',
+    roleBase: user.roleBase || 'user',
+    avatarData: user.avatarData || ''
+  };
+}
+
+router.get('/additions', requireRole('admin'), async (req, res) => {
+  const limit = Math.min(Math.max(Number(req.query.limit || 200), 1), 500);
+  const sourceMode = String(req.query.source || 'custom').trim().toLowerCase();
+  const filter = {
+    createdBy: { $exists: true, $ne: null }
+  };
+
+  // Mặc định chỉ hiện Pokémon/linh thú do admin/mod tự thêm,
+  // không spam 568 Pokémon seed sẵn từ catalog.
+  if (sourceMode !== 'all') {
+    filter.source = { $ne: 'pokemon-gen1-9' };
+  }
+
+  const rows = await Creature.find(filter)
+    .populate('createdBy', USER_SELECT)
+    .populate('updatedBy', USER_SELECT)
+    .sort({ createdAt: -1, updatedAt: -1 })
+    .limit(limit);
+
+  const countMap = await buildCountMap(rows.map(row => row._id));
+  res.json({
+    total: rows.length,
+    limit,
+    logs: rows.map(row => ({
+      id: row._id.toString(),
+      name: row.name,
+      generation: row.generation || null,
+      source: row.source || 'custom',
+      buildCount: countMap.get(row._id.toString()) || 0,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+      createdBy: publicUser(row.createdBy),
+      updatedBy: publicUser(row.updatedBy)
+    }))
+  });
+});
+
 router.post('/seed-pokemon', requireRole('admin'), async (req, res) => {
   try {
     const result = await seedPokemonCatalog({ userId: req.user._id, force: true });

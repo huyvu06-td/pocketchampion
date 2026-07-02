@@ -60,6 +60,7 @@ const el = {
   avatarInput: document.querySelector('#avatarInput'),
   btnClearAvatar: document.querySelector('#btnClearAvatar'),
   btnUsers: document.querySelector('#btnUsers'),
+  btnCreatureLogs: document.querySelector('#btnCreatureLogs'),
   btnCreatures: document.querySelector('#btnCreatures'),
   btnExport: document.querySelector('#btnExport'),
   importLabel: document.querySelector('#importLabel'),
@@ -148,6 +149,11 @@ const el = {
   btnClearRoleForm: document.querySelector('#btnClearRoleForm'),
   roleSettingsTable: document.querySelector('#roleSettingsTable'),
   usersTable: document.querySelector('#usersTable'),
+  creatureLogsDialog: document.querySelector('#creatureLogsDialog'),
+  btnCloseCreatureLogs: document.querySelector('#btnCloseCreatureLogs'),
+  btnRefreshCreatureLogs: document.querySelector('#btnRefreshCreatureLogs'),
+  creatureLogsSummary: document.querySelector('#creatureLogsSummary'),
+  creatureLogsTable: document.querySelector('#creatureLogsTable'),
   creaturesDialog: document.querySelector('#creaturesDialog'),
   btnCloseCreatures: document.querySelector('#btnCloseCreatures'),
   createCreatureForm: document.querySelector('#createCreatureForm'),
@@ -246,6 +252,10 @@ function wireEvents() {
     await saveRoleSettingFromForm();
   });
   el.btnClearRoleForm?.addEventListener('click', clearRoleForm);
+
+  el.btnCreatureLogs?.addEventListener('click', openCreatureLogsDialog);
+  el.btnCloseCreatureLogs?.addEventListener('click', () => el.creatureLogsDialog.close());
+  el.btnRefreshCreatureLogs?.addEventListener('click', loadCreatureLogs);
 
   el.btnCreatures.addEventListener('click', openCreaturesDialog);
   el.btnCloseCreatures.addEventListener('click', () => el.creaturesDialog.close());
@@ -815,6 +825,7 @@ function updatePermissionUI() {
   el.userBadge.innerHTML = `${escapeHtml(currentUser.displayName || currentUser.username)} · ${roleBadgeHtml(currentUser.role)}`;
   renderAvatar(el.currentUserAvatar, currentUser);
   el.btnUsers.classList.toggle('hidden', !isAdmin());
+  el.btnCreatureLogs?.classList.toggle('hidden', !isAdmin());
   el.btnCreatures.classList.toggle('hidden', !canManageCreatureNames());
   el.btnExport.classList.toggle('hidden', !isAdmin());
   el.importLabel.classList.toggle('hidden', !isAdmin());
@@ -1527,6 +1538,66 @@ Cancel = nhập chồng/cập nhật, không xóa dữ liệu cũ.`);
   }
 }
 
+
+async function openCreatureLogsDialog() {
+  if (!isAdmin()) return showToast('Chỉ admin được xem thông báo thêm Pokémon.', 'error');
+  await loadCreatureLogs();
+  el.creatureLogsDialog.showModal();
+}
+
+async function loadCreatureLogs() {
+  if (!isAdmin()) return;
+  try {
+    const data = await api('/api/creatures/additions?limit=300');
+    renderCreatureLogs(data.logs || [], data.total || 0);
+  } catch (error) {
+    showToast(error.message || 'Không thể tải thông báo thêm Pokémon.', 'error');
+  }
+}
+
+function renderCreatureLogs(items = [], total = items.length) {
+  if (!el.creatureLogsTable) return;
+  if (el.creatureLogsSummary) {
+    el.creatureLogsSummary.textContent = `Có ${Number(total || items.length)} thông báo thêm Pokémon/linh thú`;
+  }
+
+  if (!items.length) {
+    el.creatureLogsTable.innerHTML = '<tr><td colspan="7">Chưa có Pokémon/linh thú nào do mod/admin tự thêm.</td></tr>';
+    return;
+  }
+
+  el.creatureLogsTable.innerHTML = items.map((item, index) => {
+    const user = item.createdBy || {};
+    const role = roleMeta(user.role || 'user');
+    return `
+      <tr>
+        <td class="stt-cell">${index + 1}</td>
+        <td>
+          <strong>${escapeHtml(item.name)}</strong>
+          <div class="tiny-note">${escapeHtml(item.source || 'custom')}${item.generation ? ` · Gen ${Number(item.generation)}` : ''}</div>
+        </td>
+        <td>
+          <div class="log-user-cell">
+            ${avatarHtml(user, 'avatar-sm')}
+            <span>${roleNameHtml(user, 'Không rõ')}</span>
+          </div>
+        </td>
+        <td><span class="badge"><span class="role-logo">${escapeHtml(role.logo || '🏷️')}</span> ${escapeHtml(role.name || role.key || 'user')}</span></td>
+        <td><span class="badge">${Number(item.buildCount || 0)} build</span></td>
+        <td>${formatDate(item.createdAt)}</td>
+        <td><button class="ghost small open-creature-log" data-id="${escapeAttr(item.id)}" type="button">Mở</button></td>
+      </tr>
+    `;
+  }).join('');
+
+  el.creatureLogsTable.querySelectorAll('.open-creature-log').forEach(button => {
+    button.addEventListener('click', async () => {
+      el.creatureLogsDialog.close();
+      await selectCreature(button.dataset.id);
+    });
+  });
+}
+
 async function openCreaturesDialog() {
   if (!canManageCreatureNames()) return showToast('Chỉ mod và admin được thêm tên linh thú.', 'error');
   updateCreaturesDialogPermissions();
@@ -1614,6 +1685,7 @@ async function createCreature() {
     el.createCreatureForm.reset();
     showToast('Đã thêm tên linh thú.');
     await Promise.all([loadCreatures(), loadCreaturesForAdmin()]);
+    if (el.creatureLogsDialog?.open) await loadCreatureLogs();
   } catch (error) {
     showToast(error.message, 'error');
   }
@@ -1625,6 +1697,7 @@ async function bulkCreateCreatures() {
     el.bulkCreatureForm.reset();
     showToast(result.message || 'Đã nhập danh sách linh thú.');
     await Promise.all([loadCreatures(), loadCreaturesForAdmin()]);
+    if (el.creatureLogsDialog?.open) await loadCreatureLogs();
   } catch (error) {
     showToast(error.message, 'error');
   }

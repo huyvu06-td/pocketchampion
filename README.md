@@ -340,3 +340,10 @@ Sửa chữ xong thì push lên GitHub, Render sẽ deploy lại.
 - Xóa hoàn toàn khối **Danh sách mod** trong sidebar để trang tra cứu gọn hơn.
 - Vẫn giữ dữ liệu mod/admin/cameo cho bảng xếp hạng đóng góp ở trang chủ.
 - Không ảnh hưởng build và tài khoản trong MongoDB.
+
+
+## v2.31
+
+- Thêm nút **Thông báo thêm Pokémon** cho admin.
+- Admin xem được mod/admin nào đã thêm Pokémon/linh thú mới, thời gian thêm và số build hiện có.
+- Mặc định không hiện 568 Pokémon seed sẵn để tránh spam thông báo.
