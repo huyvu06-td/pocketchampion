@@ -76,6 +76,7 @@ function buildBackupJSON(build) {
     name: creature?.name || build.name,
     role: build.role || 'Khác',
     nature: build.nature || '',
+    item: build.item || '',
     passive: build.passive || '',
     skills: Array.isArray(build.skills) ? build.skills.slice(0, 4) : [],
     stats: build.stats || {},
@@ -145,6 +146,7 @@ router.get('/', async (req, res) => {
     filter.$or = [
       { name: { $regex: escapeRegex(search), $options: 'i' } },
       { nature: { $regex: escapeRegex(search), $options: 'i' } },
+      { item: { $regex: escapeRegex(search), $options: 'i' } },
       { role: { $regex: escapeRegex(search), $options: 'i' } }
     ];
   }
@@ -183,7 +185,7 @@ router.get('/backup/export', requireRole('admin'), async (req, res) => {
 
   res.json({
     backupType: 'pocket-champion-build-backup',
-    version: '2.19',
+    version: '2.32',
     exportedAt: new Date().toISOString(),
     note: 'File này dùng để khôi phục tên linh thú, bài build và ảnh đội hình gợi ý. Không chứa mật khẩu gốc.',
     counts: {

@@ -1295,6 +1295,27 @@ function renderItemSuggestions() {
     .join('');
 }
 
+function setItemValue(value = '') {
+  if (el.item) el.item.value = String(value || '');
+}
+
+function getItemValue() {
+  return el.item ? el.item.value : '';
+}
+
+function openDialogSafely(dialog) {
+  if (!dialog) return;
+  if (typeof dialog.showModal === 'function') {
+    try {
+      dialog.showModal();
+      return;
+    } catch (error) {
+      console.warn('Không thể mở dialog bằng showModal:', error);
+    }
+  }
+  dialog.setAttribute('open', 'open');
+}
+
 function skillPoolHtml() {
   return '';
 }
@@ -1660,7 +1681,7 @@ function openBuildDialog(build = null) {
     el.dialogTitle.textContent = 'Sửa build linh thú';
     el.role.value = build.role || '';
     el.nature.value = build.nature || '';
-    el.item.value = build.item || '';
+    setItemValue(build.item || '');
     el.passive.value = build.passive || '';
     el.notes.value = build.notes || '';
     STAT_KEYS.forEach(key => { el[key].value = build.stats?.[key] || 0; });
@@ -1668,7 +1689,7 @@ function openBuildDialog(build = null) {
     el.btnDelete.classList.toggle('hidden', !build.canDelete);
   } else {
     el.dialogTitle.textContent = `Build ${selectedCreature.name}`;
-    el.item.value = '';
+    setItemValue('');
     STAT_KEYS.forEach(key => { el[key].value = 0; });
     skillSlots().forEach((skill, index) => addSkillRow(skill, index));
     el.btnDelete.classList.add('hidden');
@@ -1676,7 +1697,7 @@ function openBuildDialog(build = null) {
 
   while (el.skillsWrap.children.length < SKILL_SLOT_COUNT) addSkillRow({ name: '' }, el.skillsWrap.children.length);
   updateStatPreview();
-  el.dialog.showModal();
+  openDialogSafely(el.dialog);
 }
 
 function addSkillRow(skill = { name: '' }, index = el.skillsWrap.children.length) {
@@ -1701,7 +1722,7 @@ function buildPayloadFromForm() {
     name: el.name.value,
     role: el.role.value,
     nature: el.nature.value,
-    item: el.item.value,
+    item: getItemValue(),
     passive: el.passive.value,
     skills,
     stats: Object.fromEntries(STAT_KEYS.map(key => [key, Number(el[key].value || 0)])),

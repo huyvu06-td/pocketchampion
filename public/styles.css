@@ -2239,3 +2239,31 @@ body {
     min-width: 760px;
   }
 }
+
+/* v2.32: Item field + lively Berry bars */
+.item-badge {
+  border-color: rgba(250, 204, 21, 0.38) !important;
+  background: rgba(250, 204, 21, 0.12) !important;
+  color: #fde68a !important;
+}
+
+.stat-row .bar.small.stat-bar {
+  position: relative;
+  height: 12px;
+  background: rgba(255, 255, 255, 0.075);
+  border: 1px solid rgba(255, 255, 255, 0.055);
+  overflow: hidden;
+}
+
+.stat-row .bar.small.stat-bar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.16), transparent);
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.stat-row .bar.small.stat-bar span {
+  transition: width 0.25s ease;
+}

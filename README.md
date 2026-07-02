@@ -347,3 +347,16 @@ Sửa chữ xong thì push lên GitHub, Render sẽ deploy lại.
 - Thêm nút **Thông báo thêm Pokémon** cho admin.
 - Admin xem được mod/admin nào đã thêm Pokémon/linh thú mới, thời gian thêm và số build hiện có.
 - Mặc định không hiện 568 Pokémon seed sẵn để tránh spam thông báo.
+
+## v2.33
+
+- Thêm mục **Vật phẩm (Item)** khi tạo/sửa build.
+- Ô Item có autocomplete/gợi ý tên vật phẩm Pokémon phổ biến như Leftovers, Choice Scarf, Focus Sash, Life Orb, berry, plate, gem, memory...
+- Khi xem/copy/backup/restore build sẽ giữ lại thông tin Item.
+- Các thanh **Berry / Chỉ số 510 điểm** được tô màu riêng theo từng chỉ số để nhìn sinh động và dễ phân biệt hơn.
+
+
+## v2.33
+
+- Sửa lỗi nút Build linh thú có thể không mở form khi trình duyệt còn cache HTML cũ thiếu ô Item.
+- Thêm xử lý dự phòng để form build vẫn mở được ngay cả khi thiếu phần tử Item trong giao diện cũ.

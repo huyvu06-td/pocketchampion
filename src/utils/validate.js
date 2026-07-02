@@ -51,6 +51,7 @@ function normalizeBeastPayload(body = {}) {
     name,
     role: cleanText(body.role, 'Khác') || 'Khác',
     nature: cleanText(body.nature),
+    item: cleanText(body.item).slice(0, 120),
     passive: cleanText(body.passive),
     skills: normalizeSkills(body.skills),
     stats: normalizeStats(body.stats),
