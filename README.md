@@ -348,6 +348,14 @@ Sửa chữ xong thì push lên GitHub, Render sẽ deploy lại.
 - Admin xem được mod/admin nào đã thêm Pokémon/linh thú mới, thời gian thêm và số build hiện có.
 - Mặc định không hiện 568 Pokémon seed sẵn để tránh spam thông báo.
 
+
+## v2.34
+
+- Thanh Berry / Chỉ số khi xem build dùng mốc 252 là đầy thanh cho từng chỉ số.
+- Giá trị 250 sẽ ngắn hơn 252, các chỉ số 0 không có màu.
+- Mỗi chỉ số có màu riêng để dễ nhìn hơn.
+- Ô nhập chỉ số giới hạn 0–252 mỗi dòng, tổng vẫn phải đúng 510.
+
 ## v2.33
 
 - Thêm mục **Vật phẩm (Item)** khi tạo/sửa build.

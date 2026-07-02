@@ -2249,7 +2249,7 @@ body {
 
 .stat-row .bar.small.stat-bar {
   position: relative;
-  height: 12px;
+  height: 14px;
   background: rgba(255, 255, 255, 0.075);
   border: 1px solid rgba(255, 255, 255, 0.055);
   overflow: hidden;
@@ -2265,5 +2265,13 @@ body {
 }
 
 .stat-row .bar.small.stat-bar span {
+  width: 0;
+  min-width: 0;
+  background: linear-gradient(90deg, var(--stat-from, #22d3ee), var(--stat-to, #7c5cff));
+  box-shadow: 0 0 20px var(--stat-glow, rgba(34, 211, 238, 0.38));
   transition: width 0.25s ease;
+}
+
+.stat-row .bar.small.stat-bar span[style*="width:0"] {
+  box-shadow: none;
 }

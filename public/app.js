@@ -1,4 +1,5 @@
 const MAX_TOTAL_STATS = 510;
+const MAX_SINGLE_STAT = 252;
 const SKILL_SLOT_COUNT = 4;
 const STAT_KEYS = ['hp', 'atk', 'satk', 'def', 'sdef', 'spe'];
 const STAT_LABELS = {
@@ -1652,12 +1653,13 @@ function buildDetailHtml(build) {
 
 function statRow(key, value) {
   const numericValue = Number(value || 0);
-  const percent = Math.min(100, Math.round((numericValue / MAX_TOTAL_STATS) * 100));
+  const percent = Math.min(100, Math.max(0, (numericValue / MAX_SINGLE_STAT) * 100));
   const [from, to] = STAT_COLORS[key] || ['#22d3ee', '#7c5cff'];
+  const displayPercent = Number(percent.toFixed(2));
   return `
     <div class="stat-row stat-row-${escapeAttr(key)}">
       <div><strong>${STAT_LABELS[key]}</strong><span>${numericValue}</span></div>
-      <div class="bar small stat-bar"><span style="width:${percent}%; background: linear-gradient(90deg, ${from}, ${to}); box-shadow: 0 0 18px ${from}66;"></span></div>
+      <div class="bar small stat-bar" style="--stat-from:${from}; --stat-to:${to}; --stat-glow:${from}66;" title="${STAT_LABELS[key]} ${numericValue}/${MAX_SINGLE_STAT}"><span style="width:${displayPercent}%;"></span></div>
     </div>
   `;
 }

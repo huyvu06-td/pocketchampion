@@ -3,6 +3,7 @@ const { baseRoleForUser } = require('../utils/roles');
 
 const STAT_KEYS = ['hp', 'atk', 'satk', 'def', 'sdef', 'spe'];
 const MAX_TOTAL_STATS = 510;
+const MAX_SINGLE_STAT = 252;
 
 const skillSchema = new mongoose.Schema(
   {
@@ -13,12 +14,12 @@ const skillSchema = new mongoose.Schema(
 
 const statsSchema = new mongoose.Schema(
   {
-    hp: { type: Number, min: 0, max: 510, default: 0 },
-    atk: { type: Number, min: 0, max: 510, default: 0 },
-    satk: { type: Number, min: 0, max: 510, default: 0 },
-    def: { type: Number, min: 0, max: 510, default: 0 },
-    sdef: { type: Number, min: 0, max: 510, default: 0 },
-    spe: { type: Number, min: 0, max: 510, default: 0 }
+    hp: { type: Number, min: 0, max: 252, default: 0 },
+    atk: { type: Number, min: 0, max: 252, default: 0 },
+    satk: { type: Number, min: 0, max: 252, default: 0 },
+    def: { type: Number, min: 0, max: 252, default: 0 },
+    sdef: { type: Number, min: 0, max: 252, default: 0 },
+    spe: { type: Number, min: 0, max: 252, default: 0 }
   },
   { _id: false }
 );
@@ -116,6 +117,7 @@ module.exports = {
   Beast: mongoose.model('Beast', beastSchema),
   STAT_KEYS,
   MAX_TOTAL_STATS,
+  MAX_SINGLE_STAT,
   statTotal,
   canViewerEdit
 };

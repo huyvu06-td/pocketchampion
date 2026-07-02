@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>POCKET CHAMPION - Tra cứu build</title>
-  <link rel="stylesheet" href="styles.css?v=2.33" />
+  <link rel="stylesheet" href="styles.css?v=2.34" />
 </head>
 <body>
   <div id="toast" class="toast hidden"></div>
@@ -32,7 +32,7 @@
 
       <form id="loginForm" class="auth-form">
         <label>Tên đăng nhập
-          <input id="loginUsername" autocomplete="username" placeholder="vd: player01" required />
+          <input id="loginUsername" autocomplete="username" placeholder="vd: tu_nguyen" required />
         </label>
         <label>Mật khẩu
           <input id="loginPassword" type="password" autocomplete="current-password" minlength="6" maxlength="32" required />
@@ -46,7 +46,7 @@
           <input id="registerDisplayName" placeholder="Tên bạn bè thấy" />
         </label>
         <label>Tên đăng nhập
-          <input id="registerUsername" autocomplete="username" placeholder="..." required />
+          <input id="registerUsername" autocomplete="username" placeholder="chữ thường, số, _ . -" required />
         </label>
         <label>Mật khẩu
           <input id="registerPassword" type="password" autocomplete="new-password" minlength="6" maxlength="32" required />
@@ -96,7 +96,7 @@
         <div class="search-box">
           <label for="searchInput">Tìm tên linh thú</label>
           <div class="search-row">
-            <input id="searchInput" type="search" placeholder="Ví dụ: Charizard " autocomplete="off" list="creatureSuggestions" />
+            <input id="searchInput" type="search" placeholder="Ví dụ: Mega Necrozma..." autocomplete="off" list="creatureSuggestions" />
             <button id="btnSearch" class="primary search-submit" type="button">Tìm kiếm</button>
           </div>
           <datalist id="creatureSuggestions"></datalist>
@@ -183,12 +183,12 @@
           <p id="statTotalText">Đã dùng 0/510</p>
         </div>
         <div class="stats-editor">
-          <label>HP <input class="stat-input" id="hp" type="number" min="0" max="510" value="0" /></label>
-          <label>ATK <input class="stat-input" id="atk" type="number" min="0" max="510" value="0" /></label>
-          <label>SATK <input class="stat-input" id="satk" type="number" min="0" max="510" value="0" /></label>
-          <label>DEF <input class="stat-input" id="def" type="number" min="0" max="510" value="0" /></label>
-          <label>SDEF <input class="stat-input" id="sdef" type="number" min="0" max="510" value="0" /></label>
-          <label>SPE <input class="stat-input" id="spe" type="number" min="0" max="510" value="0" /></label>
+          <label>HP <input class="stat-input" id="hp" type="number" min="0" max="252" value="0" /></label>
+          <label>ATK <input class="stat-input" id="atk" type="number" min="0" max="252" value="0" /></label>
+          <label>SATK <input class="stat-input" id="satk" type="number" min="0" max="252" value="0" /></label>
+          <label>DEF <input class="stat-input" id="def" type="number" min="0" max="252" value="0" /></label>
+          <label>SDEF <input class="stat-input" id="sdef" type="number" min="0" max="252" value="0" /></label>
+          <label>SPE <input class="stat-input" id="spe" type="number" min="0" max="252" value="0" /></label>
         </div>
         <div class="bar"><span id="statTotalBar"></span></div>
       </section>
@@ -472,7 +472,7 @@
     <div id="teamGuideViewer" class="team-guide-viewer"></div>
   </dialog>
 
-  <script src="site-config.js?v=2.33"></script>
-  <script src="app.js?v=2.33"></script>
+  <script src="site-config.js?v=2.34"></script>
+  <script src="app.js?v=2.34"></script>
 </body>
 </html>

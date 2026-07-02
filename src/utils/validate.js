@@ -1,4 +1,4 @@
-const { STAT_KEYS, MAX_TOTAL_STATS, statTotal } = require('../models/Beast');
+const { STAT_KEYS, MAX_TOTAL_STATS, MAX_SINGLE_STAT, statTotal } = require('../models/Beast');
 
 const MIN_PASSWORD_LENGTH = 6;
 const MAX_PASSWORD_LENGTH = 32;
@@ -13,8 +13,8 @@ function normalizeStats(stats = {}) {
   const output = {};
   for (const key of STAT_KEYS) {
     const value = Number(stats[key] ?? 0);
-    if (!Number.isInteger(value) || value < 0 || value > MAX_TOTAL_STATS) {
-      throw new Error(`${key.toUpperCase()} phải là số nguyên từ 0 đến ${MAX_TOTAL_STATS}.`);
+    if (!Number.isInteger(value) || value < 0 || value > MAX_SINGLE_STAT) {
+      throw new Error(`${key.toUpperCase()} phải là số nguyên từ 0 đến ${MAX_SINGLE_STAT}.`);
     }
     output[key] = value;
   }
