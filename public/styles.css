@@ -2240,7 +2240,7 @@ body {
   }
 }
 
-/* v2.32: Item field + lively Berry bars */
+/* v2.35: Item field + clearly visible Berry bars */
 .item-badge {
   border-color: rgba(250, 204, 21, 0.38) !important;
   background: rgba(250, 204, 21, 0.12) !important;
@@ -2248,30 +2248,57 @@ body {
 }
 
 .stat-row .bar.small.stat-bar {
-  position: relative;
-  height: 14px;
-  background: rgba(255, 255, 255, 0.075);
-  border: 1px solid rgba(255, 255, 255, 0.055);
-  overflow: hidden;
+  position: relative !important;
+  height: 14px !important;
+  border-radius: 999px !important;
+  overflow: hidden !important;
+  border: 1px solid rgba(255, 255, 255, 0.07) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.24) !important;
+}
+
+.stat-row .bar.small.stat-bar::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: var(--stat-percent, 0%);
+  min-width: 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--stat-from, #22d3ee), var(--stat-to, #7c5cff)) !important;
+  box-shadow: 0 0 18px var(--stat-glow, rgba(34, 211, 238, 0.45));
+  transition: width 0.25s ease;
+  z-index: 1;
 }
 
 .stat-row .bar.small.stat-bar::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.16), transparent);
-  opacity: 0.45;
+  z-index: 2;
+  background: linear-gradient(90deg, rgba(255,255,255,0.18), transparent 28%, rgba(255,255,255,0.10) 58%, transparent);
+  opacity: 0.38;
   pointer-events: none;
 }
 
-.stat-row .bar.small.stat-bar span {
-  width: 0;
-  min-width: 0;
-  background: linear-gradient(90deg, var(--stat-from, #22d3ee), var(--stat-to, #7c5cff));
-  box-shadow: 0 0 20px var(--stat-glow, rgba(34, 211, 238, 0.38));
-  transition: width 0.25s ease;
+.stat-row .bar.small.stat-bar .stat-bar-fill,
+.stat-row .bar.small.stat-bar > span {
+  position: absolute !important;
+  left: 0 !important;
+  top: 0 !important;
+  bottom: 0 !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  border-radius: inherit !important;
+  background: linear-gradient(90deg, var(--stat-from, #22d3ee), var(--stat-to, #7c5cff)) !important;
+  box-shadow: 0 0 18px var(--stat-glow, rgba(34, 211, 238, 0.45)) !important;
+  transition: width 0.25s ease !important;
+  z-index: 1 !important;
 }
 
-.stat-row .bar.small.stat-bar span[style*="width:0"] {
-  box-shadow: none;
+.stat-row .bar.small.stat-bar[style*="--stat-percent:0%"]::before,
+.stat-row .bar.small.stat-bar .stat-bar-fill[style*="width:0"],
+.stat-row .bar.small.stat-bar > span[style*="width:0"] {
+  box-shadow: none !important;
 }

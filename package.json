@@ -1,7 +1,7 @@
 {
   "name": "pocket-champion-linhthu-online",
-  "version": "2.34.0",
-  "description": "Web online tra cứu build Pokémon Pocket Champion với MongoDB, phân quyền, backup/restore, item autocomplete, Berry bar màu, custom role/avatar và nút Reload web cho mọi người dùng.",
+  "version": "2.35.0",
+  "description": "Web online tra cứu build Pokémon Pocket Champion với MongoDB, phân quyền, backup/restore, item autocomplete, Berry bar màu rõ ràng, custom role/avatar và nút Reload web cho mọi người dùng.",
   "main": "server.js",
   "type": "commonjs",
   "scripts": {

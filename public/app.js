@@ -1659,7 +1659,7 @@ function statRow(key, value) {
   return `
     <div class="stat-row stat-row-${escapeAttr(key)}">
       <div><strong>${STAT_LABELS[key]}</strong><span>${numericValue}</span></div>
-      <div class="bar small stat-bar" style="--stat-from:${from}; --stat-to:${to}; --stat-glow:${from}66;" title="${STAT_LABELS[key]} ${numericValue}/${MAX_SINGLE_STAT}"><span style="width:${displayPercent}%;"></span></div>
+      <div class="bar small stat-bar stat-${escapeAttr(key)}" style="--stat-from:${from}; --stat-to:${to}; --stat-glow:${from}66; --stat-percent:${displayPercent}%;" title="${STAT_LABELS[key]} ${numericValue}/${MAX_SINGLE_STAT}"><span class="stat-bar-fill" style="width:${displayPercent}%;"></span></div>
     </div>
   `;
 }

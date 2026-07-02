@@ -349,7 +349,7 @@ Sửa chữ xong thì push lên GitHub, Render sẽ deploy lại.
 - Mặc định không hiện 568 Pokémon seed sẵn để tránh spam thông báo.
 
 
-## v2.34
+## v2.35
 
 - Thanh Berry / Chỉ số khi xem build dùng mốc 252 là đầy thanh cho từng chỉ số.
 - Giá trị 250 sẽ ngắn hơn 252, các chỉ số 0 không có màu.
@@ -368,3 +368,10 @@ Sửa chữ xong thì push lên GitHub, Render sẽ deploy lại.
 
 - Sửa lỗi nút Build linh thú có thể không mở form khi trình duyệt còn cache HTML cũ thiếu ô Item.
 - Thêm xử lý dự phòng để form build vẫn mở được ngay cả khi thiếu phần tử Item trong giao diện cũ.
+
+
+## v2.35
+
+- Sửa thanh Berry/Chỉ số hiển thị màu rõ ràng bằng pseudo-element và fallback span.
+- Mốc 252 vẫn là đầy thanh; 250 ngắn hơn một chút; 0 không tô màu.
+- Bump cache query lên v=2.35 để trình duyệt tải CSS/JS mới.
