@@ -2302,3 +2302,31 @@ body {
 .stat-row .bar.small.stat-bar > span[style*="width:0"] {
   box-shadow: none !important;
 }
+
+/* v2.36: Donate honor + registration settings */
+.donate-info.full-width {
+  width: 100%;
+}
+
+.donate-honor-card {
+  display: block;
+}
+
+.donate-honor-list {
+  margin: 16px 0 0;
+  padding-left: 28px;
+  display: grid;
+  gap: 10px;
+}
+
+.donate-honor-list li {
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.055);
+  font-weight: 800;
+}
+
+.registration-manager .grid.two {
+  align-items: end;
+}

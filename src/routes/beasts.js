@@ -4,6 +4,7 @@ const { Beast, canViewerEdit } = require('../models/Beast');
 const { Creature, normalizeCreatureName, creatureKey } = require('../models/Creature');
 const { User, USER_ROLES } = require('../models/User');
 const { TeamGuide } = require('../models/TeamGuide');
+const { SiteSetting } = require('../models/SiteSetting');
 const crypto = require('crypto');
 const { requireAuth, requireRole } = require('../middleware/auth');
 const { normalizeBeastPayload, cleanText } = require('../utils/validate');
@@ -63,7 +64,22 @@ function userBackupJSON(user) {
     displayName: user.displayName || '',
     gameName: user.gameName || '',
     role: user.role || 'mod',
-    avatarData: user.avatarData || ''
+    roleBase: user.roleBase || user.role || 'user',
+    avatarData: user.avatarData || '',
+    registrationIp: user.registrationIp || '',
+    createdVia: user.createdVia || '',
+    createdAt: user.createdAt,
+    updatedAt: user.updatedAt
+  };
+}
+
+function settingsBackupJSON(setting) {
+  const publicSettings = setting.publicJSON({ role: 'admin', roleBase: 'admin' });
+  return {
+    donate: publicSettings.donate,
+    donateHonor: publicSettings.donateHonor,
+    registration: publicSettings.registration,
+    roles: publicSettings.roles || []
   };
 }
 
@@ -167,14 +183,16 @@ router.get('/roles', async (req, res) => {
 });
 
 router.get('/backup/export', requireRole('admin'), async (req, res) => {
-  const [creatures, builds, teamGuides] = await Promise.all([
+  const [creatures, builds, teamGuides, allUsers, siteSetting] = await Promise.all([
     Creature.find().sort({ name: 1 }),
     Beast.find()
       .populate('creature')
       .populate('createdBy', USER_SELECT)
       .populate('updatedBy', USER_SELECT)
       .sort({ name: 1, updatedAt: -1 }),
-    TeamGuide.find().sort({ updatedAt: -1, createdAt: -1 })
+    TeamGuide.find().sort({ updatedAt: -1, createdAt: -1 }),
+    User.find().sort({ username: 1 }),
+    SiteSetting.getMain()
   ]);
 
   const builders = new Map();
@@ -185,15 +203,19 @@ router.get('/backup/export', requireRole('admin'), async (req, res) => {
 
   res.json({
     backupType: 'pocket-champion-build-backup',
-    version: '2.32',
+    version: '2.36',
     exportedAt: new Date().toISOString(),
-    note: 'File này dùng để khôi phục tên linh thú, bài build và ảnh đội hình gợi ý. Không chứa mật khẩu gốc.',
+    note: 'File này dùng để khôi phục tên linh thú, bài build, ảnh đội hình, custom role, donate, vinh danh donate và danh sách tài khoản không kèm mật khẩu gốc.',
     counts: {
       creatures: creatures.length,
       builds: builds.length,
       builders: builders.size,
-      teamGuides: teamGuides.length
+      users: allUsers.length,
+      teamGuides: teamGuides.length,
+      donateHonorNames: siteSetting.publicJSON({ role: 'admin', roleBase: 'admin' }).donateHonor?.names?.length || 0
     },
+    settings: settingsBackupJSON(siteSetting),
+    users: allUsers.map(userBackupJSON).filter(Boolean),
     builders: Array.from(builders.values()),
     creatures: creatures.map(creature => ({
       name: creature.name,
@@ -222,14 +244,91 @@ router.post('/backup/import', requireRole('admin'), async (req, res) => {
     const rawCreatures = Array.isArray(backup.creatures) ? backup.creatures : [];
     const rawBuilds = Array.isArray(backup.builds) ? backup.builds : Array.isArray(backup.beasts) ? backup.beasts : Array.isArray(backup) ? backup : [];
     const rawBuilders = Array.isArray(backup.builders) ? backup.builders : [];
+    const rawUsers = Array.isArray(backup.users) ? backup.users : [];
     const rawTeamGuides = Array.isArray(backup.teamGuides) ? backup.teamGuides : [];
+    const rawSettings = backup.settings && typeof backup.settings === 'object' ? backup.settings : null;
 
-    if (!rawCreatures.length && !rawBuilds.length && !rawTeamGuides.length) {
-      return res.status(400).json({ message: 'File backup không có dữ liệu linh thú, build hoặc đội hình gợi ý.' });
+    if (!rawCreatures.length && !rawBuilds.length && !rawTeamGuides.length && !rawUsers.length && !rawSettings) {
+      return res.status(400).json({ message: 'File backup không có dữ liệu để khôi phục.' });
     }
 
     if (clearExisting) {
       await Promise.all([Beast.deleteMany({}), Creature.deleteMany({}), TeamGuide.deleteMany({})]);
+    }
+
+    let usersCreated = 0;
+    let usersUpdated = 0;
+    let settingsRestored = false;
+
+    if (rawSettings) {
+      const setting = await SiteSetting.getMain();
+      if (rawSettings.donate) {
+        setting.donate = {
+          enabled: Boolean(rawSettings.donate.enabled),
+          imageData: cleanText(rawSettings.donate.imageData || ''),
+          accountNumber: cleanText(rawSettings.donate.accountNumber || '').slice(0, 80),
+          bankName: cleanText(rawSettings.donate.bankName || '').slice(0, 120),
+          updatedBy: req.user._id
+        };
+      }
+      if (rawSettings.donateHonor) {
+        const honorNames = Array.isArray(rawSettings.donateHonor.names) ? rawSettings.donateHonor.names : [];
+        setting.donateHonor = {
+          enabled: Boolean(rawSettings.donateHonor.enabled),
+          names: honorNames.map(item => ({ name: cleanText(item?.name || item).slice(0, 80), createdAt: item?.createdAt ? new Date(item.createdAt) : new Date() })).filter(item => item.name).slice(0, 200),
+          updatedBy: req.user._id
+        };
+      }
+      if (rawSettings.registration) {
+        setting.registration = {
+          enabled: rawSettings.registration.enabled !== false,
+          ipLimit: Math.min(Math.max(Number(rawSettings.registration.ipLimit || 3), 1), 20),
+          updatedBy: req.user._id
+        };
+      }
+      if (Array.isArray(rawSettings.roles) && rawSettings.roles.length) {
+        setting.roles = rawSettings.roles;
+      }
+      await setting.save();
+      settingsRestored = true;
+    }
+
+    const accountRows = rawUsers.length ? rawUsers : rawBuilders;
+    for (const account of accountRows) {
+      try {
+        if (!account?.username) continue;
+        const username = safeUsername(account.username);
+        let user = await User.findOne({ username });
+        const role = String(account.role || 'user').toLowerCase().slice(0, 32) || 'user';
+        const roleBase = USER_ROLES.includes(account.roleBase) ? account.roleBase : USER_ROLES.includes(role) ? role : 'user';
+        if (user) {
+          user.displayName = String(account.displayName || account.builderDisplayName || user.displayName || '').slice(0, 60);
+          user.gameName = String(account.gameName || account.builderGameName || user.gameName || '').slice(0, 80);
+          user.avatarData = String(account.avatarData || user.avatarData || '').slice(0, 360000);
+          user.role = role;
+          user.roleBase = roleBase;
+          if (account.registrationIp) user.registrationIp = String(account.registrationIp).slice(0, 80);
+          if (account.createdVia) user.createdVia = String(account.createdVia).slice(0, 24);
+          await user.save();
+          usersUpdated += 1;
+        } else {
+          const randomPassword = crypto.randomBytes(18).toString('base64url');
+          await User.create({
+            username,
+            displayName: String(account.displayName || account.builderDisplayName || username).slice(0, 60),
+            gameName: String(account.gameName || account.builderGameName || '').slice(0, 80),
+            avatarData: String(account.avatarData || '').slice(0, 360000),
+            role,
+            roleBase,
+            registrationIp: String(account.registrationIp || '').slice(0, 80),
+            createdVia: 'backup',
+            passwordHash: await User.hashPassword(randomPassword)
+          });
+          usersCreated += 1;
+        }
+      } catch (error) {
+        // Không để lỗi một tài khoản làm hỏng cả file backup.
+      }
     }
 
     const builderMap = new Map();
@@ -341,13 +440,16 @@ router.post('/backup/import', requireRole('admin'), async (req, res) => {
     }
 
     res.json({
-      message: `Khôi phục xong: thêm ${creaturesCreated} tên linh thú, thêm ${buildsCreated} build, cập nhật ${buildsUpdated} build, thêm ${teamGuidesCreated} ảnh đội hình, lỗi ${errors.length}.`,
+      message: `Khôi phục xong: thêm ${creaturesCreated} tên linh thú, thêm ${buildsCreated} build, cập nhật ${buildsUpdated} build, thêm ${teamGuidesCreated} ảnh đội hình, thêm ${usersCreated} tài khoản, cập nhật ${usersUpdated} tài khoản, ${settingsRestored ? 'đã khôi phục cấu hình' : 'không có cấu hình'}, lỗi ${errors.length}.`,
       creaturesCreated,
       creaturesSkipped,
       buildsCreated,
       buildsUpdated,
       teamGuidesCreated,
       teamGuidesUpdated,
+      usersCreated,
+      usersUpdated,
+      settingsRestored,
       errors
     });
   } catch (error) {

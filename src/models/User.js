@@ -51,6 +51,19 @@ const userSchema = new mongoose.Schema(
       enum: USER_ROLES,
       default: 'user',
       index: true
+    },
+    registrationIp: {
+      type: String,
+      trim: true,
+      maxlength: 80,
+      default: '',
+      index: true
+    },
+    createdVia: {
+      type: String,
+      enum: ['self-register', 'admin', 'backup', 'seed'],
+      default: 'admin',
+      index: true
     }
   },
   { timestamps: true }

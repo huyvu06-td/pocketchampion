@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>POCKET CHAMPION - Tra cứu build</title>
-  <link rel="stylesheet" href="styles.css?v=2.35" />
+  <link rel="stylesheet" href="styles.css?v=2.36" />
 </head>
 <body>
   <div id="toast" class="toast hidden"></div>
@@ -23,12 +23,14 @@
       <div class="auth-quick-actions">
         <button id="btnReloadAuth" class="ghost" type="button">🔄 Reload web</button>
         <button id="btnDonateAuth" class="donate-button hidden" type="button">💖 Donate / Ủng hộ</button>
+        <button id="btnDonateHonorAuth" class="ghost hidden" type="button">💖 Vinh danh Donate</button>
       </div>
 
       <div class="auth-tabs">
         <button id="tabLogin" class="active" type="button">Đăng nhập</button>
         <button id="tabRegister" type="button">Tạo tài khoản</button>
       </div>
+      <div id="registerDisabledNotice" class="form-error hidden">Admin đang tắt đăng ký tự do. Hãy liên hệ admin để tạo tài khoản.</div>
 
       <form id="loginForm" class="auth-form">
         <label>Tên đăng nhập
@@ -72,6 +74,7 @@
         <button id="btnHome" class="ghost" type="button">🏠 Trang chủ</button>
         <button id="btnReload" class="ghost" type="button">🔄 Reload web</button>
         <button id="btnDonate" class="donate-button hidden" type="button">💖 Donate</button>
+        <button id="btnDonateHonor" class="ghost hidden" type="button">💖 Vinh danh Donate</button>
         <button id="btnTeamGuides" class="primary" type="button">Đội hình gợi ý của các hệ</button>
         <div id="currentUserMini" class="user-mini"><span id="currentUserAvatar" class="avatar avatar-sm"></span><span id="userBadge" class="user-badge"></span></div>
         <label id="avatarLabel" class="ghost avatar-upload hidden">
@@ -318,6 +321,25 @@
       <button class="primary" type="submit">Tạo tài khoản</button>
     </form>
 
+    <section class="registration-manager create-user-form">
+      <div class="section-title compact">
+        <h3>Cài đặt đăng ký</h3>
+        <p>Admin có thể bật/tắt đăng ký tự do và giới hạn số tài khoản mỗi IP được tự tạo.</p>
+      </div>
+      <form id="registrationSettingsForm" class="role-settings-form">
+        <label class="check-row">
+          <input id="registrationEnabled" type="checkbox" />
+          <span>Cho phép người chơi tự tạo tài khoản</span>
+        </label>
+        <div class="grid two">
+          <label>Giới hạn tài khoản mỗi IP
+            <input id="registrationIpLimit" type="number" min="1" max="20" value="3" />
+          </label>
+          <button class="primary" type="submit">Lưu đăng ký</button>
+        </div>
+      </form>
+    </section>
+
     <section class="role-manager create-user-form">
       <div class="section-title compact">
         <h3>Custom role</h3>
@@ -411,6 +433,43 @@
   </dialog>
 
 
+  <dialog id="donateHonorDialog" class="dialog donate-dialog">
+    <div class="dialog-head">
+      <div>
+        <p class="eyebrow">Donate</p>
+        <h2>Vinh danh người ủng hộ</h2>
+      </div>
+      <button type="button" id="btnCloseDonateHonor" class="icon-btn" aria-label="Đóng">×</button>
+    </div>
+
+    <div class="donate-body">
+      <div id="donateHonorViewer" class="donate-viewer"></div>
+
+      <section id="donateHonorAdminPanel" class="form-section hidden">
+        <div class="section-title">
+          <h3>Cấu hình Vinh danh Donate</h3>
+          <p>Chỉ cần nhập tên, mỗi dòng một người. Có thể bật/tắt để người chơi thấy.</p>
+        </div>
+        <form id="donateHonorForm">
+          <label class="check-row">
+            <input id="donateHonorEnabled" type="checkbox" />
+            <span>Hiển thị Vinh danh Donate cho mọi người</span>
+          </label>
+          <label>Danh sách tên người ủng hộ
+            <textarea id="donateHonorNames" rows="8" placeholder="Mỗi dòng một tên, ví dụ:
+KayD
+HNghi
+Ẩn danh"></textarea>
+          </label>
+          <div class="dialog-actions">
+            <div class="spacer"></div>
+            <button type="submit" class="primary">Lưu vinh danh</button>
+          </div>
+        </form>
+      </section>
+    </div>
+  </dialog>
+
   <dialog id="teamGuidesDialog" class="dialog team-guides-dialog">
     <div class="dialog-head">
       <div>
@@ -472,7 +531,7 @@
     <div id="teamGuideViewer" class="team-guide-viewer"></div>
   </dialog>
 
-  <script src="site-config.js?v=2.34"></script>
-  <script src="app.js?v=2.35"></script>
+  <script src="site-config.js?v=2.36"></script>
+  <script src="app.js?v=2.36"></script>
 </body>
 </html>

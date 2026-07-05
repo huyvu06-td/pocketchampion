@@ -78,7 +78,7 @@ async function seedAdmin() {
   const existing = await User.findOne({ username });
   if (!existing) {
     const passwordHash = await User.hashPassword(password);
-    await User.create({ username, displayName, gameName, passwordHash, role: 'admin', roleBase: 'admin' });
+    await User.create({ username, displayName, gameName, passwordHash, role: 'admin', roleBase: 'admin', createdVia: 'seed' });
     console.log(`Seeded admin account: ${username}`);
     return;
   }

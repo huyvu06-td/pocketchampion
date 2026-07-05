@@ -327,6 +327,8 @@ let roleDefinitions = [];
 let modList = [];
 let selectedBuilder = null;
 let donationConfig = { enabled: false, visible: false, imageData: '', accountNumber: '', bankName: '' };
+let donateHonorConfig = { enabled: false, visible: false, names: [] };
+let registrationConfig = { enabled: true, ipLimit: 3 };
 let pendingDonateImageData = '';
 let teamGuides = [];
 let pendingTeamGuideImageData = '';
@@ -363,6 +365,9 @@ const el = {
   btnReloadAuth: document.querySelector('#btnReloadAuth'),
   btnDonate: document.querySelector('#btnDonate'),
   btnDonateAuth: document.querySelector('#btnDonateAuth'),
+  btnDonateHonor: document.querySelector('#btnDonateHonor'),
+  btnDonateHonorAuth: document.querySelector('#btnDonateHonorAuth'),
+  registerDisabledNotice: document.querySelector('#registerDisabledNotice'),
   btnTeamGuides: document.querySelector('#btnTeamGuides'),
   teamGuidesDialog: document.querySelector('#teamGuidesDialog'),
   btnCloseTeamGuides: document.querySelector('#btnCloseTeamGuides'),
@@ -389,6 +394,13 @@ const el = {
   donateBankName: document.querySelector('#donateBankName'),
   donateImageInput: document.querySelector('#donateImageInput'),
   btnClearDonateImage: document.querySelector('#btnClearDonateImage'),
+  donateHonorDialog: document.querySelector('#donateHonorDialog'),
+  btnCloseDonateHonor: document.querySelector('#btnCloseDonateHonor'),
+  donateHonorViewer: document.querySelector('#donateHonorViewer'),
+  donateHonorAdminPanel: document.querySelector('#donateHonorAdminPanel'),
+  donateHonorForm: document.querySelector('#donateHonorForm'),
+  donateHonorEnabled: document.querySelector('#donateHonorEnabled'),
+  donateHonorNames: document.querySelector('#donateHonorNames'),
   searchInput: document.querySelector('#searchInput'),
   btnSearch: document.querySelector('#btnSearch'),
   creatureSuggestions: document.querySelector('#creatureSuggestions'),
@@ -442,6 +454,9 @@ const el = {
   roleBase: document.querySelector('#roleBase'),
   btnClearRoleForm: document.querySelector('#btnClearRoleForm'),
   roleSettingsTable: document.querySelector('#roleSettingsTable'),
+  registrationSettingsForm: document.querySelector('#registrationSettingsForm'),
+  registrationEnabled: document.querySelector('#registrationEnabled'),
+  registrationIpLimit: document.querySelector('#registrationIpLimit'),
   usersTable: document.querySelector('#usersTable'),
   creatureLogsDialog: document.querySelector('#creatureLogsDialog'),
   btnCloseCreatureLogs: document.querySelector('#btnCloseCreatureLogs'),
@@ -491,7 +506,10 @@ function wireEvents() {
   el.btnReloadAuth?.addEventListener('click', reloadWeb);
   el.btnDonate?.addEventListener('click', openDonateDialog);
   el.btnDonateAuth?.addEventListener('click', openDonateDialog);
+  el.btnDonateHonor?.addEventListener('click', openDonateHonorDialog);
+  el.btnDonateHonorAuth?.addEventListener('click', openDonateHonorDialog);
   el.btnCloseDonate?.addEventListener('click', () => el.donateDialog.close());
+  el.btnCloseDonateHonor?.addEventListener('click', () => el.donateHonorDialog.close());
   el.btnTeamGuides?.addEventListener('click', openTeamGuidesDialog);
   el.btnCloseTeamGuides?.addEventListener('click', () => el.teamGuidesDialog.close());
   el.btnCloseTeamGuideViewer?.addEventListener('click', () => el.teamGuideViewerDialog.close());
@@ -504,6 +522,10 @@ function wireEvents() {
   el.donateSettingsForm?.addEventListener('submit', async event => {
     event.preventDefault();
     await saveDonateSettings();
+  });
+  el.donateHonorForm?.addEventListener('submit', async event => {
+    event.preventDefault();
+    await saveDonateHonorSettings();
   });
   el.donateImageInput?.addEventListener('change', handleDonateImageUpload);
   el.btnClearDonateImage?.addEventListener('click', () => {
@@ -545,6 +567,10 @@ function wireEvents() {
   el.roleSettingsForm?.addEventListener('submit', async event => {
     event.preventDefault();
     await saveRoleSettingFromForm();
+  });
+  el.registrationSettingsForm?.addEventListener('submit', async event => {
+    event.preventDefault();
+    await saveRegistrationSettings();
   });
   el.btnClearRoleForm?.addEventListener('click', clearRoleForm);
 
@@ -610,6 +636,9 @@ async function login() {
 
 async function register() {
   try {
+    if (registrationConfig?.enabled === false) {
+      return showToast('Admin đang tắt đăng ký tự do.', 'error');
+    }
     if (el.registerPassword.value !== el.registerConfirmPassword.value) {
       showToast('Hai lần nhập mật khẩu không khớp.', 'error');
       el.registerConfirmPassword.focus();
@@ -986,11 +1015,16 @@ async function loadDonationPublic() {
   try {
     const data = await apiPublic('/api/settings/public');
     donationConfig = data.donate || donationConfig;
+    donateHonorConfig = data.donateHonor || donateHonorConfig;
+    registrationConfig = data.registration || registrationConfig;
     updateDonateButtons();
+    updateRegisterUI();
     if (el.donateDialog?.open) renderDonateDialog();
+    if (el.donateHonorDialog?.open) renderDonateHonorDialog();
   } catch (error) {
-    console.warn('Không tải được donate config:', error.message);
+    console.warn('Không tải được cấu hình public:', error.message);
     updateDonateButtons();
+    updateRegisterUI();
   }
 }
 
@@ -999,8 +1033,11 @@ async function loadDonateAdmin() {
   try {
     const data = await api('/api/settings/donate');
     donationConfig = data.donate || donationConfig;
+    donateHonorConfig = data.donateHonor || donateHonorConfig;
+    registrationConfig = data.registration || registrationConfig;
     pendingDonateImageData = donationConfig.imageData || '';
     updateDonateButtons();
+    updateRegisterUI();
     renderDonateDialog();
   } catch (error) {
     showToast(error.message, 'error');
@@ -1009,8 +1046,20 @@ async function loadDonateAdmin() {
 
 function updateDonateButtons() {
   const visibleForViewer = Boolean(donationConfig?.enabled || donationConfig?.visible || isAdmin());
+  const honorVisible = Boolean(donateHonorConfig?.enabled || donateHonorConfig?.visible || isAdmin());
   if (el.btnDonate) el.btnDonate.classList.toggle('hidden', !visibleForViewer);
   if (el.btnDonateAuth) el.btnDonateAuth.classList.toggle('hidden', !Boolean(donationConfig?.enabled || donationConfig?.visible));
+  if (el.btnDonateHonor) el.btnDonateHonor.classList.toggle('hidden', !honorVisible);
+  if (el.btnDonateHonorAuth) el.btnDonateHonorAuth.classList.toggle('hidden', !Boolean(donateHonorConfig?.enabled || donateHonorConfig?.visible));
+}
+
+function updateRegisterUI() {
+  const enabled = registrationConfig?.enabled !== false;
+  if (el.tabRegister) el.tabRegister.classList.toggle('hidden', !enabled);
+  if (el.registerDisabledNotice) el.registerDisabledNotice.classList.toggle('hidden', enabled);
+  if (!enabled && el.registerForm && !el.registerForm.classList.contains('hidden')) {
+    setAuthMode('login');
+  }
 }
 
 async function openDonateDialog() {
@@ -1105,6 +1154,65 @@ async function saveDonateSettings() {
     showToast(result.message || 'Đã lưu donate.');
   } catch (error) {
     showToast(error.message || 'Không thể lưu donate.', 'error');
+  }
+}
+
+
+async function openDonateHonorDialog() {
+  if (isAdmin()) {
+    try {
+      const data = await api('/api/settings/donate-honor');
+      donateHonorConfig = data.donateHonor || donateHonorConfig;
+      updateDonateButtons();
+    } catch (error) {
+      showToast(error.message || 'Không tải được Vinh danh Donate.', 'error');
+    }
+  }
+  renderDonateHonorDialog();
+  el.donateHonorDialog.showModal();
+}
+
+function renderDonateHonorDialog() {
+  if (!el.donateHonorViewer) return;
+  const names = Array.isArray(donateHonorConfig.names) ? donateHonorConfig.names : [];
+  const enabled = Boolean(donateHonorConfig.enabled);
+  el.donateHonorViewer.innerHTML = `
+    <div class="donate-card donate-honor-card">
+      <div class="donate-info full-width">
+        ${isAdmin() && !enabled ? '<span class="badge danger-badge">Đang ẩn với người xem</span>' : '<span class="badge strong-badge">Vinh danh Donate</span>'}
+        <h3>Cảm ơn những người đã ủng hộ cộng đồng</h3>
+        ${names.length
+          ? `<ol class="donate-honor-list">${names.map(item => `<li><span>${escapeHtml(item.name || item)}</span></li>`).join('')}</ol>`
+          : '<p class="muted">Chưa có tên trong bảng vinh danh.</p>'}
+      </div>
+    </div>
+  `;
+
+  const admin = isAdmin();
+  el.donateHonorAdminPanel?.classList.toggle('hidden', !admin);
+  if (admin) {
+    el.donateHonorEnabled.checked = enabled;
+    el.donateHonorNames.value = names.map(item => item.name || item).filter(Boolean).join('\n');
+  }
+}
+
+async function saveDonateHonorSettings() {
+  if (!isAdmin()) return showToast('Chỉ admin được lưu Vinh danh Donate.', 'error');
+  try {
+    const names = el.donateHonorNames.value.split(/[\n,;]+/g).map(name => name.trim()).filter(Boolean);
+    const result = await api('/api/settings/donate-honor', {
+      method: 'PATCH',
+      body: {
+        enabled: el.donateHonorEnabled.checked,
+        names
+      }
+    });
+    donateHonorConfig = result.donateHonor || donateHonorConfig;
+    updateDonateButtons();
+    renderDonateHonorDialog();
+    showToast(result.message || 'Đã lưu Vinh danh Donate.');
+  } catch (error) {
+    showToast(error.message || 'Không thể lưu Vinh danh Donate.', 'error');
   }
 }
 
@@ -1836,7 +1944,7 @@ async function exportBuilds() {
     a.download = `pocket-champion-backup-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
-    showToast(`Đã tải backup: ${data.counts?.creatures || 0} linh thú, ${data.counts?.builds || 0} build, ${data.counts?.teamGuides || 0} ảnh đội hình.`);
+    showToast(`Đã tải backup: ${data.counts?.creatures || 0} linh thú, ${data.counts?.builds || 0} build, ${data.counts?.users || 0} tài khoản, ${data.counts?.teamGuides || 0} ảnh đội hình.`);
   } catch (error) {
     showToast(error.message, 'error');
   }
@@ -2085,10 +2193,48 @@ async function deleteAllCreatures() {
 async function openUsersDialog() {
   if (!isAdmin()) return;
   await loadRoleSettings();
+  await loadRegistrationAdmin();
   await loadUsers();
+  renderRegistrationSettingsForm();
   renderRoleSettingsTable();
   renderRoleSelectOptions();
   el.usersDialog.showModal();
+}
+
+async function loadRegistrationAdmin() {
+  if (!isAdmin()) return;
+  try {
+    const data = await api('/api/settings/registration');
+    registrationConfig = data.registration || registrationConfig;
+    updateRegisterUI();
+  } catch (error) {
+    showToast(error.message || 'Không tải được cài đặt đăng ký.', 'error');
+  }
+}
+
+function renderRegistrationSettingsForm() {
+  if (!el.registrationSettingsForm) return;
+  el.registrationEnabled.checked = registrationConfig.enabled !== false;
+  el.registrationIpLimit.value = Math.min(Math.max(Number(registrationConfig.ipLimit || 3), 1), 20);
+}
+
+async function saveRegistrationSettings() {
+  if (!isAdmin()) return showToast('Chỉ admin được sửa cài đặt đăng ký.', 'error');
+  try {
+    const result = await api('/api/settings/registration', {
+      method: 'PATCH',
+      body: {
+        enabled: el.registrationEnabled.checked,
+        ipLimit: el.registrationIpLimit.value
+      }
+    });
+    registrationConfig = result.registration || registrationConfig;
+    renderRegistrationSettingsForm();
+    updateRegisterUI();
+    showToast(result.message || 'Đã lưu cài đặt đăng ký.');
+  } catch (error) {
+    showToast(error.message || 'Không thể lưu cài đặt đăng ký.', 'error');
+  }
 }
 
 async function loadUsers() {

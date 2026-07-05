@@ -3,8 +3,16 @@ const { User } = require('../models/User');
 const { signToken, requireAuth } = require('../middleware/auth');
 const { cleanText, validatePassword, validateUsername, validateAvatarData } = require('../utils/validate');
 const { baseRoleForUser } = require('../utils/roles');
+const { SiteSetting } = require('../models/SiteSetting');
 
 const router = express.Router();
+
+function clientIp(req) {
+  const forwarded = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim();
+  const raw = forwarded || req.ip || req.socket?.remoteAddress || '';
+  return String(raw).replace(/^::ffff:/, '').slice(0, 80) || 'unknown';
+}
+
 
 router.post('/register', async (req, res) => {
   try {
@@ -16,6 +24,19 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ message: 'Hai lần nhập mật khẩu không khớp.' });
     }
 
+    const setting = await SiteSetting.getMain();
+    const registration = setting.registration || {};
+    if (registration.enabled === false) {
+      return res.status(403).json({ message: 'Admin đang tắt đăng ký tự do. Hãy liên hệ admin để tạo tài khoản.' });
+    }
+
+    const ip = clientIp(req);
+    const ipLimit = Math.min(Math.max(Number(registration.ipLimit || 3), 1), 20);
+    const createdFromIp = await User.countDocuments({ createdVia: 'self-register', registrationIp: ip });
+    if (createdFromIp >= ipLimit) {
+      return res.status(429).json({ message: `IP này đã tạo tối đa ${ipLimit} tài khoản. Hãy liên hệ admin nếu cần thêm.` });
+    }
+
     const passwordHash = await User.hashPassword(password);
 
     const user = await User.create({
@@ -23,7 +44,9 @@ router.post('/register', async (req, res) => {
       displayName: cleanText(req.body.displayName),
       passwordHash,
       role: 'user',
-      roleBase: 'user'
+      roleBase: 'user',
+      registrationIp: ip,
+      createdVia: 'self-register'
     });
 
     res.status(201).json({

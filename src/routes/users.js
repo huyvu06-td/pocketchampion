@@ -86,6 +86,7 @@ router.post('/', async (req, res) => {
       gameName: cleanText(req.body.gameName),
       role,
       roleBase: roleDef.baseRole,
+      createdVia: 'admin',
       passwordHash
     });
 
