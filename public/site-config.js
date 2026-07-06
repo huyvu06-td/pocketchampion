@@ -38,8 +38,8 @@ window.POCKET_CHAMPION_LINKS = [
   {
     id: 'adminFacebook',
     label: 'Facebook Admin',
-    url: '',
-    description: 'Facebook cá nhân của admin',
+    url: 'https://www.facebook.com/Lucifer.1143/',
+    description: 'Facebook admin, mọi nhu cầu liên hệ nhé',
     icon: '👤'
   }
 ];
