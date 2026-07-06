@@ -333,6 +333,10 @@ let pendingDonateImageData = '';
 let teamGuides = [];
 let pendingTeamGuideImageData = '';
 let pendingTeamGuideThumbData = '';
+let usersCache = [];
+let userSearchTerm = '';
+let pendingBuilds = [];
+let modApplications = [];
 
 const el = {
   toast: document.querySelector('#toast'),
@@ -363,12 +367,29 @@ const el = {
   btnHome: document.querySelector('#btnHome'),
   btnReload: document.querySelector('#btnReload'),
   btnReloadAuth: document.querySelector('#btnReloadAuth'),
+  btnApplyMod: document.querySelector('#btnApplyMod'),
+  btnModApplications: document.querySelector('#btnModApplications'),
+  btnPendingBuilds: document.querySelector('#btnPendingBuilds'),
   btnDonate: document.querySelector('#btnDonate'),
   btnDonateAuth: document.querySelector('#btnDonateAuth'),
   btnDonateHonor: document.querySelector('#btnDonateHonor'),
   btnDonateHonorAuth: document.querySelector('#btnDonateHonorAuth'),
   registerDisabledNotice: document.querySelector('#registerDisabledNotice'),
   btnTeamGuides: document.querySelector('#btnTeamGuides'),
+  modApplicationDialog: document.querySelector('#modApplicationDialog'),
+  modApplicationForm: document.querySelector('#modApplicationForm'),
+  modApplicationMessage: document.querySelector('#modApplicationMessage'),
+  btnCloseModApplication: document.querySelector('#btnCloseModApplication'),
+  modApplicationsAdminDialog: document.querySelector('#modApplicationsAdminDialog'),
+  btnCloseModApplicationsAdmin: document.querySelector('#btnCloseModApplicationsAdmin'),
+  btnRefreshModApplications: document.querySelector('#btnRefreshModApplications'),
+  modApplicationsSummary: document.querySelector('#modApplicationsSummary'),
+  modApplicationsList: document.querySelector('#modApplicationsList'),
+  pendingBuildsDialog: document.querySelector('#pendingBuildsDialog'),
+  btnClosePendingBuilds: document.querySelector('#btnClosePendingBuilds'),
+  btnRefreshPendingBuilds: document.querySelector('#btnRefreshPendingBuilds'),
+  pendingBuildsSummary: document.querySelector('#pendingBuildsSummary'),
+  pendingBuildsList: document.querySelector('#pendingBuildsList'),
   teamGuidesDialog: document.querySelector('#teamGuidesDialog'),
   btnCloseTeamGuides: document.querySelector('#btnCloseTeamGuides'),
   teamGuideAdminPanel: document.querySelector('#teamGuideAdminPanel'),
@@ -446,6 +467,9 @@ const el = {
   newPassword: document.querySelector('#newPassword'),
   newConfirmPassword: document.querySelector('#newConfirmPassword'),
   newRole: document.querySelector('#newRole'),
+  userSearchInput: document.querySelector('#userSearchInput'),
+  btnUserSearch: document.querySelector('#btnUserSearch'),
+  btnClearUserSearch: document.querySelector('#btnClearUserSearch'),
   roleSettingsForm: document.querySelector('#roleSettingsForm'),
   roleKey: document.querySelector('#roleKey'),
   roleName: document.querySelector('#roleName'),
@@ -506,6 +530,18 @@ function wireEvents() {
   el.btnHome?.addEventListener('click', goHome);
   el.btnReload?.addEventListener('click', reloadWeb);
   el.btnReloadAuth?.addEventListener('click', reloadWeb);
+  el.btnApplyMod?.addEventListener('click', openModApplicationDialog);
+  el.btnCloseModApplication?.addEventListener('click', () => el.modApplicationDialog.close());
+  el.modApplicationForm?.addEventListener('submit', async event => {
+    event.preventDefault();
+    await submitModApplication();
+  });
+  el.btnModApplications?.addEventListener('click', openModApplicationsAdminDialog);
+  el.btnCloseModApplicationsAdmin?.addEventListener('click', () => el.modApplicationsAdminDialog.close());
+  el.btnRefreshModApplications?.addEventListener('click', loadModApplications);
+  el.btnPendingBuilds?.addEventListener('click', openPendingBuildsDialog);
+  el.btnClosePendingBuilds?.addEventListener('click', () => el.pendingBuildsDialog.close());
+  el.btnRefreshPendingBuilds?.addEventListener('click', loadPendingBuilds);
   el.btnDonate?.addEventListener('click', openDonateDialog);
   el.btnDonateAuth?.addEventListener('click', openDonateDialog);
   el.btnDonateHonor?.addEventListener('click', openDonateHonorDialog);
@@ -565,6 +601,19 @@ function wireEvents() {
   el.createUserForm.addEventListener('submit', async event => {
     event.preventDefault();
     await createUser();
+  });
+  el.userSearchInput?.addEventListener('input', debounce(async () => {
+    userSearchTerm = el.userSearchInput.value.trim();
+    await loadUsers(userSearchTerm);
+  }, 250));
+  el.btnUserSearch?.addEventListener('click', async () => {
+    userSearchTerm = el.userSearchInput.value.trim();
+    await loadUsers(userSearchTerm);
+  });
+  el.btnClearUserSearch?.addEventListener('click', async () => {
+    userSearchTerm = '';
+    if (el.userSearchInput) el.userSearchInput.value = '';
+    await loadUsers();
   });
   el.roleSettingsForm?.addEventListener('submit', async event => {
     event.preventDefault();
@@ -1234,6 +1283,9 @@ function updatePermissionUI() {
   el.userBadge.innerHTML = `${escapeHtml(currentUser.displayName || currentUser.username)} · ${roleBadgeHtml(currentUser.role)}`;
   renderAvatar(el.currentUserAvatar, currentUser);
   el.btnUsers.classList.toggle('hidden', !isAdmin());
+  el.btnModApplications?.classList.toggle('hidden', !isAdmin());
+  el.btnPendingBuilds?.classList.toggle('hidden', !isAdmin());
+  el.btnApplyMod?.classList.toggle('hidden', !currentUser || roleRank(currentBaseRole()) >= roleRank('mod'));
   el.btnCreatureLogs?.classList.toggle('hidden', !isAdmin());
   el.btnCreatures.classList.toggle('hidden', !canManageCreatureNames());
   el.btnExport.classList.toggle('hidden', !isAdmin());
@@ -1556,6 +1608,7 @@ function renderBuilderDetail() {
             <div>
               <h4>${escapeHtml(build.name)}</h4>
               <p>${escapeHtml(build.role || 'Khác')} · ${escapeHtml(build.nature || 'Chưa nhập Nature')}${build.item ? ` · Item: ${escapeHtml(build.item)}` : ''}</p>
+              ${build.isPending ? '<span class="badge warning-badge">Chờ duyệt</span>' : ''}${build.isRejected ? '<span class="badge danger-badge">Đã từ chối</span>' : ''}
             </div>
             <span class="badge">Berry ${Number(build.statTotal || 0)}/510</span>
           </button>
@@ -1652,6 +1705,10 @@ function renderDetail() {
   if (copyBuildButton && selectedBuild) copyBuildButton.addEventListener('click', () => copyBuild(selectedBuild));
   const editButton = document.querySelector('#btnEditBuild');
   if (editButton && selectedBuild) editButton.addEventListener('click', () => openBuildDialog(selectedBuild));
+  const approveSelectedButton = document.querySelector('#btnApproveSelectedBuild');
+  if (approveSelectedButton && selectedBuild) approveSelectedButton.addEventListener('click', () => updateBuildStatus(selectedBuild.id, 'approved'));
+  const rejectSelectedButton = document.querySelector('#btnRejectSelectedBuild');
+  if (rejectSelectedButton && selectedBuild) rejectSelectedButton.addEventListener('click', () => updateBuildStatus(selectedBuild.id, 'rejected'));
   const deleteSelectedButton = document.querySelector('#btnDeleteSelectedBuild');
   if (deleteSelectedButton && selectedBuild) deleteSelectedButton.addEventListener('click', () => deleteBuildById(selectedBuild.id));
 }
@@ -1659,12 +1716,13 @@ function renderDetail() {
 function buildCardHtml(build) {
   const builder = builderProfile(build);
   return `
-    <button class="build-card ${selectedBuildId === build.id ? 'active' : ''}" data-id="${escapeAttr(build.id)}" type="button">
+    <button class="build-card ${selectedBuildId === build.id ? 'active' : ''} ${build.isPending ? 'pending-build' : ''} ${build.isRejected ? 'rejected-build' : ''}" data-id="${escapeAttr(build.id)}" type="button">
       <div class="build-card-main">
         ${avatarHtml(builder, 'avatar-sm')}
         <div>
           <h4>${roleNameHtml(builder, builderLabel(build))}</h4>
           <p>${escapeHtml(build.role || 'Khác')} · ${escapeHtml(build.nature || 'Chưa nhập Nature')}${build.item ? ` · Item: ${escapeHtml(build.item)}` : ''}</p>
+          ${build.isPending ? '<span class="badge warning-badge">Chờ duyệt</span>' : ''}${build.isRejected ? '<span class="badge danger-badge">Đã từ chối</span>' : ''}
         </div>
       </div>
       <div class="build-card-side">
@@ -1695,10 +1753,12 @@ function buildDetailHtml(build) {
           <span class="badge">${escapeHtml(build.role || 'Khác')}</span>
           ${build.item ? `<span class="badge item-badge">Item: ${escapeHtml(build.item)}</span>` : ''}
           <span class="badge">Berry ${Number(build.statTotal || 0)}/510</span>
+          ${build.isPending ? '<span class="badge warning-badge">Chờ admin duyệt</span>' : ''}${build.isRejected ? '<span class="badge danger-badge">Đã từ chối</span>' : ''}
         </div>
       </div>
       <div class="detail-actions">
         <button id="btnCopyBuild" class="ghost" type="button">Copy build</button>
+        ${build.canApprove ? '<button id="btnApproveSelectedBuild" class="primary" type="button">Duyệt build</button><button id="btnRejectSelectedBuild" class="danger ghost" type="button">Từ chối</button>' : ''}
         ${build.canDelete ? '<button id="btnDeleteSelectedBuild" class="danger ghost" type="button">Xóa build</button>' : ''}
         ${canEditBuild(build) ? '<button id="btnEditBuild" class="primary" type="button">Sửa build</button>' : ''}
       </div>
@@ -1840,7 +1900,7 @@ async function saveBuildFromForm() {
       body: payload
     });
     el.dialog.close();
-    showToast(id ? 'Đã sửa build.' : 'Đã thêm build linh thú.');
+    showToast(data.message || (id ? 'Đã sửa build.' : 'Đã thêm build linh thú.'));
     await Promise.all([loadRoles(), loadMods(), loadCreatures()]);
     await selectCreature((data.beast.creature && data.beast.creature.id) || payload.creatureId, data.beast.id);
   } catch (error) {
@@ -2176,6 +2236,178 @@ async function deleteAllCreatures() {
 }
 
 
+
+function openModApplicationDialog() {
+  if (!currentUser) return showToast('Bạn cần đăng nhập.', 'error');
+  if (roleRank(currentBaseRole()) >= roleRank('mod')) {
+    return showToast('Tài khoản của bạn đã có quyền mod/admin.', 'error');
+  }
+  if (el.modApplicationMessage) el.modApplicationMessage.value = '';
+  openDialogSafely(el.modApplicationDialog);
+}
+
+async function submitModApplication() {
+  try {
+    const result = await api('/api/users/mod-applications', {
+      method: 'POST',
+      body: { message: el.modApplicationMessage?.value || '' }
+    });
+    el.modApplicationDialog.close();
+    showToast(result.message || 'Đã gửi ứng cử mod.');
+  } catch (error) {
+    showToast(error.message || 'Không thể gửi ứng cử mod.', 'error');
+  }
+}
+
+async function openModApplicationsAdminDialog() {
+  if (!isAdmin()) return showToast('Chỉ admin được duyệt ứng cử mod.', 'error');
+  await loadModApplications();
+  openDialogSafely(el.modApplicationsAdminDialog);
+}
+
+async function loadModApplications() {
+  if (!isAdmin()) return;
+  try {
+    const data = await api('/api/users/mod-applications?status=pending');
+    modApplications = data.applications || [];
+    renderModApplications();
+  } catch (error) {
+    showToast(error.message || 'Không tải được đơn ứng cử mod.', 'error');
+  }
+}
+
+function renderModApplications() {
+  if (!el.modApplicationsList) return;
+  const apps = Array.isArray(modApplications) ? modApplications : [];
+  if (el.modApplicationsSummary) {
+    el.modApplicationsSummary.textContent = `${apps.length} đơn ứng cử đang chờ duyệt`;
+  }
+  el.modApplicationsList.innerHTML = apps.length ? apps.map(app => {
+    const user = app.user || {};
+    return `
+      <article class="application-card" data-id="${escapeAttr(app.id)}">
+        <div class="application-main">
+          ${avatarHtml(user, 'avatar-sm')}
+          <div>
+            <h3>${roleNameHtml(user, user.username || 'Người chơi')}</h3>
+            <p>${escapeHtml(app.message || 'Không có lời nhắn.')}</p>
+            <div class="pet-meta">
+              <span class="badge">Gửi: ${formatDate(app.createdAt)}</span>
+              <span class="badge">Hiện tại: ${escapeHtml(roleLabel(user.role || 'user'))}</span>
+            </div>
+          </div>
+        </div>
+        <div class="application-actions">
+          <button class="primary approve-mod-app" data-id="${escapeAttr(app.id)}" type="button">Duyệt lên mod</button>
+          <button class="danger ghost reject-mod-app" data-id="${escapeAttr(app.id)}" type="button">Từ chối</button>
+        </div>
+      </article>
+    `;
+  }).join('') : '<p class="muted">Không có đơn ứng cử mod nào đang chờ duyệt.</p>';
+
+  el.modApplicationsList.querySelectorAll('.approve-mod-app').forEach(button => {
+    button.addEventListener('click', () => reviewModApplication(button.dataset.id, 'approve'));
+  });
+  el.modApplicationsList.querySelectorAll('.reject-mod-app').forEach(button => {
+    button.addEventListener('click', () => reviewModApplication(button.dataset.id, 'reject'));
+  });
+}
+
+async function reviewModApplication(id, action) {
+  try {
+    const confirmText = action === 'approve'
+      ? 'Duyệt đơn này và nâng tài khoản lên mod?'
+      : 'Từ chối đơn ứng cử mod này?';
+    if (!confirm(confirmText)) return;
+    const result = await api(`/api/users/mod-applications/${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      body: { action }
+    });
+    showToast(result.message || 'Đã xử lý đơn ứng cử.');
+    await Promise.all([loadModApplications(), loadUsers(), loadMods(), loadAdminStats()]);
+  } catch (error) {
+    showToast(error.message || 'Không thể xử lý đơn ứng cử.', 'error');
+  }
+}
+
+async function openPendingBuildsDialog() {
+  if (!isAdmin()) return showToast('Chỉ admin được duyệt build.', 'error');
+  await loadPendingBuilds();
+  openDialogSafely(el.pendingBuildsDialog);
+}
+
+async function loadPendingBuilds() {
+  if (!isAdmin()) return;
+  try {
+    const data = await api('/api/beasts/pending');
+    pendingBuilds = data.builds || [];
+    renderPendingBuilds();
+  } catch (error) {
+    showToast(error.message || 'Không tải được build chờ duyệt.', 'error');
+  }
+}
+
+function renderPendingBuilds() {
+  if (!el.pendingBuildsList) return;
+  const builds = Array.isArray(pendingBuilds) ? pendingBuilds : [];
+  if (el.pendingBuildsSummary) {
+    el.pendingBuildsSummary.textContent = `${builds.length} build đang chờ duyệt`;
+  }
+  el.pendingBuildsList.innerHTML = builds.length ? builds.map(build => {
+    const builder = builderProfile(build);
+    return `
+      <article class="application-card" data-id="${escapeAttr(build.id)}">
+        <div class="application-main">
+          ${avatarHtml(builder, 'avatar-sm')}
+          <div>
+            <h3>${escapeHtml(build.name)}</h3>
+            <p>${roleNameHtml(builder, builderLabel(build))} · ${escapeHtml(build.role || 'Khác')} · ${escapeHtml(build.nature || 'Chưa nhập Nature')}</p>
+            <div class="pet-meta">
+              ${build.item ? `<span class="badge item-badge">Item: ${escapeHtml(build.item)}</span>` : ''}
+              <span class="badge">Berry ${Number(build.statTotal || 0)}/510</span>
+              <span class="badge">Cập nhật: ${formatDate(build.updatedAt)}</span>
+            </div>
+          </div>
+        </div>
+        <div class="application-actions">
+          <button class="ghost open-pending-build" data-creature-id="${escapeAttr(build.creature?.id || '')}" data-build-id="${escapeAttr(build.id)}" type="button">Mở</button>
+          <button class="primary approve-pending-build" data-id="${escapeAttr(build.id)}" type="button">Duyệt</button>
+          <button class="danger ghost reject-pending-build" data-id="${escapeAttr(build.id)}" type="button">Từ chối</button>
+        </div>
+      </article>
+    `;
+  }).join('') : '<p class="muted">Không có build nào đang chờ duyệt.</p>';
+
+  el.pendingBuildsList.querySelectorAll('.open-pending-build').forEach(button => {
+    button.addEventListener('click', async () => {
+      if (!button.dataset.creatureId) return showToast('Build này chưa gắn Pokémon.', 'error');
+      el.pendingBuildsDialog.close();
+      await selectCreature(button.dataset.creatureId, button.dataset.buildId);
+    });
+  });
+  el.pendingBuildsList.querySelectorAll('.approve-pending-build').forEach(button => {
+    button.addEventListener('click', () => updateBuildStatus(button.dataset.id, 'approved'));
+  });
+  el.pendingBuildsList.querySelectorAll('.reject-pending-build').forEach(button => {
+    button.addEventListener('click', () => updateBuildStatus(button.dataset.id, 'rejected'));
+  });
+}
+
+async function updateBuildStatus(id, status) {
+  try {
+    if (status === 'rejected' && !confirm('Từ chối build này? Build sẽ không hiện công khai.')) return;
+    const result = await api(`/api/beasts/${encodeURIComponent(id)}/status`, {
+      method: 'PATCH',
+      body: { status }
+    });
+    showToast(result.message || 'Đã cập nhật trạng thái build.');
+    await Promise.all([loadPendingBuilds(), loadRoles(), loadMods(), loadCreatures(), loadAdminStats()]);
+    if (selectedCreature) await selectCreature(selectedCreature.id, selectedBuildId, false);
+  } catch (error) {
+    showToast(error.message || 'Không thể cập nhật trạng thái build.', 'error');
+  }
+}
+
 async function openUsersDialog() {
   if (!isAdmin()) return;
   await loadRoleSettings();
@@ -2264,9 +2496,12 @@ function renderAdminStats(data = {}) {
   `).join('') : '<p class="muted">Chưa có dữ liệu đăng ký.</p>';
 }
 
-async function loadUsers() {
-  const data = await api('/api/users');
-  renderUsers(data.users || []);
+async function loadUsers(search = userSearchTerm) {
+  const params = new URLSearchParams();
+  if (search) params.set('search', search);
+  const data = await api(`/api/users?${params.toString()}`);
+  usersCache = data.users || [];
+  renderUsers(usersCache);
 }
 
 function renderUsers(users) {

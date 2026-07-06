@@ -34,5 +34,12 @@ window.POCKET_CHAMPION_LINKS = [
     url: 'https://www.facebook.com/share/g/15wXVYVakkd/',
     description: 'Nhóm cộng đồng game',
     icon: '👥'
+  },
+  {
+    id: 'adminFacebook',
+    label: 'Facebook Admin',
+    url: '',
+    description: 'Facebook cá nhân của admin',
+    icon: '👤'
   }
 ];

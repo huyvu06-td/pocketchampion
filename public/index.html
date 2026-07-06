@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>POCKET CHAMPION - Tra cứu build</title>
-  <link rel="stylesheet" href="styles.css?v=2.37" />
+  <link rel="stylesheet" href="styles.css?v=2.38" />
 </head>
 <body>
   <div id="toast" class="toast hidden"></div>
@@ -73,6 +73,7 @@
       <div class="hero-actions">
         <button id="btnHome" class="ghost" type="button">🏠 Trang chủ</button>
         <button id="btnReload" class="ghost" type="button">🔄 Reload web</button>
+        <button id="btnApplyMod" class="ghost hidden" type="button">📝 Ứng cử mod</button>
         <button id="btnDonate" class="donate-button hidden" type="button">💖 Donate</button>
         <button id="btnDonateHonor" class="ghost hidden" type="button">💖 Vinh danh Donate</button>
         <button id="btnTeamGuides" class="primary" type="button">Đội hình gợi ý của các hệ</button>
@@ -83,6 +84,8 @@
         </label>
         <button id="btnClearAvatar" class="ghost hidden" type="button">Xóa avatar</button>
         <button id="btnUsers" class="ghost hidden" type="button">Quản lý tài khoản</button>
+        <button id="btnModApplications" class="ghost hidden" type="button">Duyệt ứng cử mod</button>
+        <button id="btnPendingBuilds" class="ghost hidden" type="button">Duyệt build</button>
         <button id="btnCreatureLogs" class="ghost hidden" type="button">Thông báo thêm Pokémon</button>
         <button id="btnCreatures" class="primary hidden" type="button">Quản lý tên linh thú</button>
         <button id="btnExport" class="ghost hidden" type="button">Sao lưu dữ liệu</button>
@@ -308,6 +311,16 @@
       <button type="button" id="btnCloseUsers" class="icon-btn" aria-label="Đóng">×</button>
     </div>
 
+    <section class="create-user-form account-search-box">
+      <h3>Tìm tài khoản</h3>
+      <div class="search-row">
+        <input id="userSearchInput" type="search" placeholder="Tìm username, tên hiển thị, tên trong game..." autocomplete="off" />
+        <button id="btnUserSearch" class="primary search-submit" type="button">Tìm</button>
+        <button id="btnClearUserSearch" class="ghost" type="button">Xóa lọc</button>
+      </div>
+      <p class="tiny-note">Dùng để tìm nhanh người chơi trước khi cấp role.</p>
+    </section>
+
     <form id="createUserForm" class="create-user-form">
       <h3>Tạo tài khoản cho bạn bè</h3>
       <div class="grid five">
@@ -480,6 +493,63 @@ HNghi
     </div>
   </dialog>
 
+
+  <dialog id="modApplicationDialog" class="dialog donate-dialog">
+    <div class="dialog-head">
+      <div>
+        <p class="eyebrow">Ứng cử</p>
+        <h2>Ứng cử làm mod</h2>
+      </div>
+      <button type="button" id="btnCloseModApplication" class="icon-btn" aria-label="Đóng">×</button>
+    </div>
+    <form id="modApplicationForm" class="auth-form">
+      <p class="muted">Gửi đơn để admin xem xét cấp quyền mod. Bạn có thể ghi lý do ngắn gọn.</p>
+      <label>Lời nhắn cho admin
+        <textarea id="modApplicationMessage" rows="5" maxlength="1000" placeholder="Ví dụ: Tôi muốn hỗ trợ build Pokémon cho nhóm..."></textarea>
+      </label>
+      <div class="dialog-actions">
+        <div class="spacer"></div>
+        <button class="primary" type="submit">Gửi ứng cử</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="modApplicationsAdminDialog" class="dialog users-dialog">
+    <div class="dialog-head">
+      <div>
+        <p class="eyebrow">Admin</p>
+        <h2>Duyệt ứng cử mod</h2>
+      </div>
+      <button type="button" id="btnCloseModApplicationsAdmin" class="icon-btn" aria-label="Đóng">×</button>
+    </div>
+    <div class="admin-table-toolbar">
+      <div>
+        <strong id="modApplicationsSummary">Chưa tải đơn ứng cử</strong>
+        <p class="tiny-note">Duyệt sẽ tự nâng tài khoản lên mod.</p>
+      </div>
+      <button id="btnRefreshModApplications" class="ghost" type="button">Làm mới</button>
+    </div>
+    <div id="modApplicationsList" class="application-list"></div>
+  </dialog>
+
+  <dialog id="pendingBuildsDialog" class="dialog users-dialog">
+    <div class="dialog-head">
+      <div>
+        <p class="eyebrow">Admin</p>
+        <h2>Build chờ duyệt</h2>
+      </div>
+      <button type="button" id="btnClosePendingBuilds" class="icon-btn" aria-label="Đóng">×</button>
+    </div>
+    <div class="admin-table-toolbar">
+      <div>
+        <strong id="pendingBuildsSummary">Chưa tải build chờ duyệt</strong>
+        <p class="tiny-note">Build của Cameo sẽ ở trạng thái chờ duyệt trước khi hiện công khai.</p>
+      </div>
+      <button id="btnRefreshPendingBuilds" class="ghost" type="button">Làm mới</button>
+    </div>
+    <div id="pendingBuildsList" class="application-list"></div>
+  </dialog>
+
   <dialog id="teamGuidesDialog" class="dialog team-guides-dialog">
     <div class="dialog-head">
       <div>
@@ -541,7 +611,7 @@ HNghi
     <div id="teamGuideViewer" class="team-guide-viewer"></div>
   </dialog>
 
-  <script src="site-config.js?v=2.36"></script>
-  <script src="app.js?v=2.37"></script>
+  <script src="site-config.js?v=2.38"></script>
+  <script src="app.js?v=2.38"></script>
 </body>
 </html>

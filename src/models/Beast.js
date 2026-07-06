@@ -35,6 +35,7 @@ const beastSchema = new mongoose.Schema(
     skills: { type: [skillSchema], default: [] },
     stats: { type: statsSchema, default: () => ({}) },
     notes: { type: String, trim: true, maxlength: 6000, default: '' },
+    status: { type: String, enum: ['approved', 'pending', 'rejected'], default: 'approved', index: true },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', index: true },
     updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
   },
@@ -100,10 +101,14 @@ beastSchema.methods.toClient = function toClient(options = {}) {
     stats: this.stats || {},
     statTotal: this.statTotal,
     notes: this.notes,
+    status: this.status || 'approved',
+    isPending: (this.status || 'approved') === 'pending',
+    isRejected: (this.status || 'approved') === 'rejected',
     createdBy: summarizeUser(this.createdBy),
     updatedBy: summarizeUser(this.updatedBy),
     canEdit: canViewerEdit(viewer, this),
     canDelete: Boolean(viewer && baseRoleForUser(viewer) === 'admin'),
+    canApprove: Boolean(viewer && baseRoleForUser(viewer) === 'admin' && (this.status || 'approved') === 'pending'),
     createdAt: this.createdAt,
     updatedAt: this.updatedAt
   };

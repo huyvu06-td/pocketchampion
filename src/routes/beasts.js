@@ -8,6 +8,7 @@ const { SiteSetting } = require('../models/SiteSetting');
 const crypto = require('crypto');
 const { requireAuth, requireRole } = require('../middleware/auth');
 const { normalizeBeastPayload, cleanText } = require('../utils/validate');
+const { baseRoleForUser } = require('../utils/roles');
 
 const router = express.Router();
 const USER_SELECT = 'username displayName gameName role roleBase avatarData';
@@ -22,6 +23,40 @@ function duplicateMessage(req) {
 
 function escapeRegex(value = '') {
   return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function approvedBuildFilter() {
+  return { $or: [{ status: 'approved' }, { status: { $exists: false } }] };
+}
+
+function visibleBuildFilter(user) {
+  if (baseRoleForUser(user) === 'admin') return {};
+  return {
+    $or: [
+      { status: 'approved' },
+      { status: { $exists: false } },
+      { createdBy: user._id }
+    ]
+  };
+}
+
+function buildStatusForUser(user) {
+  return baseRoleForUser(user) === 'cameo' ? 'pending' : 'approved';
+}
+
+function canViewerSeeBuild(user, build) {
+  if (!build) return false;
+  if (baseRoleForUser(user) === 'admin') return true;
+  const status = build.status || 'approved';
+  if (status === 'approved') return true;
+  const ownerId = build.createdBy?._id ? build.createdBy._id.toString() : build.createdBy?.toString();
+  return Boolean(ownerId && ownerId === user._id.toString());
+}
+
+function pendingMessageForBuild(build) {
+  return (build.status || 'approved') === 'pending'
+    ? 'Đã lưu build, đang chờ admin duyệt trước khi hiện công khai.'
+    : 'Đã lưu build.';
 }
 
 async function findCreatureForCreate(req) {
@@ -97,6 +132,7 @@ function buildBackupJSON(build) {
     skills: Array.isArray(build.skills) ? build.skills.slice(0, 4) : [],
     stats: build.stats || {},
     notes: build.notes || '',
+    status: build.status || 'approved',
     builderUsername: createdBy?.username || '',
     builderDisplayName: createdBy?.displayName || '',
     builderGameName: createdBy?.gameName || '',
@@ -168,7 +204,10 @@ router.get('/', async (req, res) => {
   }
   if (role) filter.role = role;
 
-  const beasts = await Beast.find(filter)
+  const visibility = visibleBuildFilter(req.user);
+  const query = Object.keys(visibility).length ? { $and: [visibility, filter] } : filter;
+
+  const beasts = await Beast.find(query)
     .populate('creature')
     .populate('createdBy', USER_SELECT)
     .populate('updatedBy', USER_SELECT)
@@ -178,7 +217,7 @@ router.get('/', async (req, res) => {
 });
 
 router.get('/roles', async (req, res) => {
-  const roles = await Beast.distinct('role');
+  const roles = await Beast.distinct('role', approvedBuildFilter());
   res.json({ roles: roles.filter(Boolean).sort((a, b) => a.localeCompare(b, 'vi')) });
 });
 
@@ -203,7 +242,7 @@ router.get('/backup/export', requireRole('admin'), async (req, res) => {
 
   res.json({
     backupType: 'pocket-champion-build-backup',
-    version: '2.36',
+    version: '2.38',
     exportedAt: new Date().toISOString(),
     note: 'File này dùng để khôi phục tên linh thú, bài build, ảnh đội hình, custom role, donate, vinh danh donate và danh sách tài khoản không kèm mật khẩu gốc.',
     counts: {
@@ -394,11 +433,11 @@ router.post('/backup/import', requireRole('admin'), async (req, res) => {
 
         const existing = await Beast.findOne({ creature: creature._id, createdBy: owner._id });
         if (existing) {
-          Object.assign(existing, payload, { creature: creature._id, name: creature.name, updatedBy: req.user._id });
+          Object.assign(existing, payload, { creature: creature._id, name: creature.name, updatedBy: req.user._id, status: item.status || existing.status || 'approved' });
           await existing.save();
           buildsUpdated += 1;
         } else {
-          await Beast.create({ ...payload, creature: creature._id, name: creature.name, createdBy: owner._id, updatedBy: req.user._id });
+          await Beast.create({ ...payload, creature: creature._id, name: creature.name, createdBy: owner._id, updatedBy: req.user._id, status: item.status || 'approved' });
           buildsCreated += 1;
         }
       } catch (error) {
@@ -457,6 +496,41 @@ router.post('/backup/import', requireRole('admin'), async (req, res) => {
   }
 });
 
+
+router.get('/pending', requireRole('admin'), async (req, res) => {
+  const builds = await Beast.find({ status: 'pending' })
+    .populate('creature')
+    .populate('createdBy', USER_SELECT)
+    .populate('updatedBy', USER_SELECT)
+    .sort({ updatedAt: -1, createdAt: -1 })
+    .limit(300);
+  res.json({ builds: builds.map(build => build.toClient({ viewer: req.user })) });
+});
+
+router.patch('/:id/status', requireRole('admin'), async (req, res) => {
+  try {
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      return res.status(404).json({ message: 'Không tìm thấy build.' });
+    }
+    const status = String(req.body.status || '').trim().toLowerCase();
+    if (!['approved', 'rejected', 'pending'].includes(status)) {
+      return res.status(400).json({ message: 'Trạng thái build không hợp lệ.' });
+    }
+    const beast = await Beast.findById(req.params.id)
+      .populate('creature')
+      .populate('createdBy', USER_SELECT)
+      .populate('updatedBy', USER_SELECT);
+    if (!beast) return res.status(404).json({ message: 'Không tìm thấy build.' });
+    beast.status = status;
+    beast.updatedBy = req.user._id;
+    await beast.save();
+    await beast.populate('updatedBy', USER_SELECT);
+    res.json({ beast: beast.toClient({ viewer: req.user }), message: status === 'approved' ? 'Đã duyệt build.' : status === 'rejected' ? 'Đã từ chối build.' : 'Đã chuyển build về chờ duyệt.' });
+  } catch (error) {
+    res.status(400).json({ message: error.message || 'Không thể cập nhật trạng thái build.' });
+  }
+});
+
 router.get('/:id', async (req, res) => {
   if (!mongoose.isValidObjectId(req.params.id)) {
     return res.status(404).json({ message: 'Không tìm thấy build.' });
@@ -466,6 +540,7 @@ router.get('/:id', async (req, res) => {
     .populate('createdBy', USER_SELECT)
     .populate('updatedBy', USER_SELECT);
   if (!beast) return res.status(404).json({ message: 'Không tìm thấy build.' });
+  if (!canViewerSeeBuild(req.user, beast)) return res.status(404).json({ message: 'Không tìm thấy build.' });
   res.json({ beast: beast.toClient({ viewer: req.user }) });
 });
 
@@ -478,12 +553,13 @@ router.post('/', requireRole('cameo', 'mod', 'admin'), async (req, res) => {
       creature: creature._id,
       name: creature.name,
       createdBy: req.user._id,
-      updatedBy: req.user._id
+      updatedBy: req.user._id,
+      status: buildStatusForUser(req.user)
     });
     await beast.populate('creature');
     await beast.populate('createdBy', USER_SELECT);
     await beast.populate('updatedBy', USER_SELECT);
-    res.status(201).json({ beast: beast.toClient({ viewer: req.user }) });
+    res.status(201).json({ beast: beast.toClient({ viewer: req.user }), message: pendingMessageForBuild(beast) });
   } catch (error) {
     if (error.code === 11000) {
       return res.status(409).json({ message: duplicateMessage(req) });
@@ -506,7 +582,7 @@ router.put('/:id', requireRole('cameo', 'mod', 'admin'), async (req, res) => {
 
     const buildName = beast.creature?.name || beast.name;
     const payload = normalizeBeastPayload({ ...req.body, name: buildName });
-    Object.assign(beast, payload, { name: buildName, updatedBy: req.user._id });
+    Object.assign(beast, payload, { name: buildName, updatedBy: req.user._id, status: buildStatusForUser(req.user) });
     await beast.save();
     await beast.populate('creature');
     await beast.populate('createdBy', USER_SELECT);
@@ -548,11 +624,11 @@ router.post('/bulk/import', requireRole('cameo', 'mod', 'admin'), async (req, re
         });
         const existing = await Beast.findOne({ creature: creature._id, createdBy: req.user._id });
         if (existing) {
-          Object.assign(existing, payload, { creature: creature._id, name: creature.name, updatedBy: req.user._id });
+          Object.assign(existing, payload, { creature: creature._id, name: creature.name, updatedBy: req.user._id, status: buildStatusForUser(req.user) });
           await existing.save();
           updated += 1;
         } else {
-          await Beast.create({ ...payload, creature: creature._id, name: creature.name, createdBy: req.user._id, updatedBy: req.user._id });
+          await Beast.create({ ...payload, creature: creature._id, name: creature.name, createdBy: req.user._id, updatedBy: req.user._id, status: buildStatusForUser(req.user) });
           created += 1;
         }
       } catch (error) {

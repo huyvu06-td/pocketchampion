@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const { Creature, normalizeCreatureName, creatureKey } = require('../models/Creature');
 const { Beast } = require('../models/Beast');
+const { baseRoleForUser } = require('../utils/roles');
 const { requireAuth, requireRole } = require('../middleware/auth');
 const { seedPokemonCatalog, pokemonCatalogStats } = require('../utils/pokemonSeed');
 
@@ -37,8 +38,17 @@ function parseNameList(input) {
   return names;
 }
 
+function approvedBuildMatch() {
+  return { $or: [{ status: 'approved' }, { status: { $exists: false } }] };
+}
+
+function visibleBuildMatch(user) {
+  if (baseRoleForUser(user) === 'admin') return {};
+  return { $or: [{ status: 'approved' }, { status: { $exists: false } }, { createdBy: user._id }] };
+}
+
 async function buildCountMap(creatureIds = null) {
-  const match = { creature: { $exists: true, $ne: null } };
+  const match = { creature: { $exists: true, $ne: null }, ...approvedBuildMatch() };
   if (Array.isArray(creatureIds)) {
     match.creature = { $in: creatureIds };
   }
@@ -149,14 +159,16 @@ router.get('/:id', async (req, res) => {
   const creature = await Creature.findById(req.params.id);
   if (!creature) return res.status(404).json({ message: 'Không tìm thấy linh thú.' });
 
-  const builds = await Beast.find({ creature: creature._id })
+  const builds = await Beast.find({ creature: creature._id, ...visibleBuildMatch(req.user) })
     .populate('creature')
     .populate('createdBy', USER_SELECT)
     .populate('updatedBy', USER_SELECT)
     .sort({ updatedAt: -1, createdAt: -1 });
 
+  const approvedCount = await Beast.countDocuments({ creature: creature._id, ...approvedBuildMatch() });
+
   res.json({
-    creature: creature.toClient(builds.length, { includeSkills: true }),
+    creature: creature.toClient(approvedCount, { includeSkills: true }),
     builds: builds.map(build => build.toClient({ viewer: req.user }))
   });
 });
