@@ -63,6 +63,47 @@ router.get('/:id/builds', async (req, res) => {
 
 router.use(requireRole('admin'));
 
+
+router.get('/stats', async (req, res) => {
+  const [totalBuilds, builtCreatureIds, users] = await Promise.all([
+    Beast.countDocuments(),
+    Beast.distinct('creature', { creature: { $exists: true, $ne: null } }),
+    User.find().sort({ createdAt: -1 }).select('username displayName gameName role roleBase avatarData createdAt createdVia registrationIp')
+  ]);
+
+  const byDay = new Map();
+  for (const user of users) {
+    const date = user.createdAt ? new Date(user.createdAt).toISOString().slice(0, 10) : 'Không rõ ngày';
+    if (!byDay.has(date)) byDay.set(date, []);
+    byDay.get(date).push({
+      id: user._id.toString(),
+      username: user.username,
+      displayName: user.displayName || '',
+      gameName: user.gameName || '',
+      avatarData: user.avatarData || '',
+      role: user.role || 'user',
+      roleBase: baseRoleForUser(user),
+      createdAt: user.createdAt,
+      createdVia: user.createdVia || 'admin'
+    });
+  }
+
+  const registrationsByDay = [...byDay.entries()]
+    .sort((a, b) => String(b[0]).localeCompare(String(a[0])))
+    .map(([date, dayUsers]) => ({
+      date,
+      count: dayUsers.length,
+      users: dayUsers
+    }));
+
+  res.json({
+    totalBuilds,
+    totalBuiltPokemon: builtCreatureIds.filter(Boolean).length,
+    totalUsers: users.length,
+    registrationsByDay
+  });
+});
+
 router.get('/', async (req, res) => {
   const users = await User.find().sort({ role: 1, username: 1 });
   res.json({ users: users.map(user => user.safeJSON()) });

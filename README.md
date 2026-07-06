@@ -1,4 +1,4 @@
-# POCKET CHAMPION online v2.36
+# POCKET CHAMPION online v2.37
 
 Bản này xóa hoàn toàn **Danh sách mod** trong sidebar trên cả desktop và mobile.
 
@@ -376,7 +376,7 @@ Sửa chữ xong thì push lên GitHub, Render sẽ deploy lại.
 - Mốc 252 vẫn là đầy thanh; 250 ngắn hơn một chút; 0 không tô màu.
 - Bump cache query lên v=2.35 để trình duyệt tải CSS/JS mới.
 
-## v2.36
+## v2.37
 
 - Backup lưu thêm custom role, donate, Vinh danh Donate, cài đặt đăng ký và danh sách tài khoản không kèm mật khẩu.
 - Thêm mục Vinh danh Donate chỉ nhập tên, admin bật/tắt được.

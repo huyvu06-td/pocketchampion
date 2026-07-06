@@ -2330,3 +2330,94 @@ body {
 .registration-manager .grid.two {
   align-items: end;
 }
+
+/* v2.37 - sidebar/search + admin statistics */
+.pet-list.hidden,
+.sidebar .pet-list:empty {
+  display: none !important;
+}
+
+.admin-stats-panel {
+  gap: 14px;
+}
+
+.admin-stats-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.stat-chip {
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  background: rgba(15, 23, 42, 0.32);
+  border-radius: 18px;
+  padding: 14px;
+}
+
+.stat-chip strong {
+  display: block;
+  font-size: 1.9rem;
+  line-height: 1;
+  color: #67e8f9;
+}
+
+.stat-chip span {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.registration-daily-list {
+  display: grid;
+  gap: 10px;
+}
+
+.registration-day {
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 16px;
+  background: rgba(30, 41, 59, 0.34);
+  overflow: hidden;
+}
+
+.registration-day summary {
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  color: #e5e7eb;
+}
+
+.registration-day summary span {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.registration-users {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0 14px 14px;
+}
+
+.registration-user-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border-radius: 999px;
+  padding: 7px 10px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: rgba(15, 23, 42, 0.32);
+}
+
+.registration-user-pill small {
+  color: var(--muted);
+}
+
+@media (max-width: 720px) {
+  .admin-stats-summary {
+    grid-template-columns: 1fr;
+  }
+}

@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>POCKET CHAMPION - Tra cứu build</title>
-  <link rel="stylesheet" href="styles.css?v=2.36" />
+  <link rel="stylesheet" href="styles.css?v=2.37" />
 </head>
 <body>
   <div id="toast" class="toast hidden"></div>
@@ -110,7 +110,7 @@
           </select>
         </div>
 
-        <div id="petList" class="pet-list"></div>
+        <div id="petList" class="pet-list hidden"></div>
 
       </aside>
 
@@ -340,6 +340,16 @@
       </form>
     </section>
 
+
+    <section class="admin-stats-panel create-user-form">
+      <div class="section-title compact">
+        <h3>Thống kê dữ liệu</h3>
+        <p>Chỉ admin thấy: tổng Pokémon đã có build, tổng build và tài khoản đăng ký theo ngày.</p>
+      </div>
+      <div id="adminStatsSummary" class="admin-stats-summary"></div>
+      <div id="registrationDailyList" class="registration-daily-list"></div>
+    </section>
+
     <section class="role-manager create-user-form">
       <div class="section-title compact">
         <h3>Custom role</h3>
@@ -532,6 +542,6 @@ HNghi
   </dialog>
 
   <script src="site-config.js?v=2.36"></script>
-  <script src="app.js?v=2.36"></script>
+  <script src="app.js?v=2.37"></script>
 </body>
 </html>

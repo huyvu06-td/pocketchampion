@@ -457,6 +457,8 @@ const el = {
   registrationSettingsForm: document.querySelector('#registrationSettingsForm'),
   registrationEnabled: document.querySelector('#registrationEnabled'),
   registrationIpLimit: document.querySelector('#registrationIpLimit'),
+  adminStatsSummary: document.querySelector('#adminStatsSummary'),
+  registrationDailyList: document.querySelector('#registrationDailyList'),
   usersTable: document.querySelector('#usersTable'),
   creatureLogsDialog: document.querySelector('#creatureLogsDialog'),
   btnCloseCreatureLogs: document.querySelector('#btnCloseCreatureLogs'),
@@ -715,6 +717,10 @@ function canEditBuild(build) {
 
 function isAdmin() {
   return currentBaseRole() === 'admin';
+}
+
+function canSeeBuildCounts() {
+  return isAdmin();
 }
 
 function builderProfile(build) {
@@ -1293,17 +1299,18 @@ function renderModList() {
 
 function renderHomeLeaderboard() {
   if (!el.homeLeaderboard) return;
-  if (!modList.length) {
+  const ranked = modList.filter(mod => Number(mod.buildCount || 0) > 0);
+  if (!ranked.length) {
     el.homeLeaderboard.innerHTML = '';
     return;
   }
 
-  const top = modList.slice(0, 10);
+  const top = ranked.slice(0, 10);
   el.homeLeaderboard.innerHTML = `
     <div class="leaderboard-card">
       <div class="section-title compact">
         <h3>Bảng xếp hạng đóng góp build</h3>
-        <p>Top Cameo/mod/admin có nhiều bài build nhất. Bấm vào tên để xem toàn bộ linh thú người đó đã build.</p>
+        <p>Bấm vào tên để xem toàn bộ linh thú người đó đã build.</p>
       </div>
       <div class="leaderboard-list">
         ${top.map((mod, index) => `
@@ -1311,7 +1318,7 @@ function renderHomeLeaderboard() {
             <span class="rank-medal">${index + 1}</span>
             ${avatarHtml(mod, 'avatar-sm')}
             <span class="leaderboard-name">${roleNameHtml(mod)}</span>
-            <span class="badge">${Number(mod.buildCount || 0)} build</span>
+            ${canSeeBuildCounts() ? `<span class="badge">${Number(mod.buildCount || 0)} build</span>` : ''}
           </button>
         `).join('')}
       </div>
@@ -1349,35 +1356,12 @@ async function loadCreatures() {
 }
 
 function renderList() {
-  if (!creatures.length) {
-    const searchText = el.searchInput.value.trim();
-    if (!searchText) {
-      el.petList.innerHTML = '<p class="muted">Chưa có Pokémon nào được build nên chưa hiển thị ở trang chủ.</p>';
-    } else {
-      el.petList.innerHTML = canCreateBuild()
-        ? '<p class="muted">Không tìm thấy tên linh thú. Cameo cần chọn tên đã có; mod/admin có thể thêm trong “Quản lý tên linh thú”.</p>'
-        : '<p class="muted">Không tìm thấy Pokémon đã có build phù hợp.</p>';
-    }
-    return;
+  // v2.37: Không hiển thị danh sách Pokémon gợi ý ở sidebar nữa.
+  // Người dùng nhập tên rồi bấm Tìm kiếm; datalist vẫn gợi ý tên trong ô nhập.
+  if (el.petList) {
+    el.petList.innerHTML = '';
+    el.petList.classList.add('hidden');
   }
-
-  el.petList.innerHTML = creatures.map(creature => `
-    <button class="pet-card ${selectedCreature?.id === creature.id ? 'active' : ''}" data-id="${escapeAttr(creature.id)}" type="button">
-      <div>
-        <h3>${escapeHtml(creature.name)}</h3>
-        <div class="pet-meta">
-          ${creature.generation ? `<span class="badge">Gen ${Number(creature.generation)}</span>` : ''}
-          ${Number(creature.suggestedSkillCount || 0) ? `<span class="badge">${Number(creature.suggestedSkillCount)} skill</span>` : ''}
-          <span class="badge">${Number(creature.buildCount || 0)} build</span>
-        </div>
-      </div>
-      <span class="chevron">›</span>
-    </button>
-  `).join('');
-
-  el.petList.querySelectorAll('.pet-card').forEach(btn => {
-    btn.addEventListener('click', () => selectCreature(btn.dataset.id));
-  });
 }
 
 function renderCreatureSuggestions() {
@@ -1432,7 +1416,7 @@ function skillPoolHtml() {
 async function performSearch() {
   await loadCreatures();
   const typedRaw = el.searchInput.value.trim();
-  if (!typedRaw) return;
+  if (!typedRaw) return showToast('Hãy nhập tên Pokémon cần tra cứu.', 'error');
   const typed = typedRaw.toLocaleLowerCase('vi-VN');
   const exact = creatures.find(creature => String(creature.name || '').trim().toLocaleLowerCase('vi-VN') === typed);
   if (exact) {
@@ -1443,11 +1427,13 @@ async function performSearch() {
     await selectCreature(creatures[0].id);
     return;
   }
-  if (!creatures.length) {
-    showToast(canCreateBuild()
-      ? 'Không tìm thấy tên Pokémon này. Mod/admin có thể thêm tên trong Quản lý tên linh thú.'
-      : 'Không tìm thấy Pokémon đã có build phù hợp.', 'error');
+  if (creatures.length > 1) {
+    showToast('Có nhiều kết quả gần giống. Hãy chọn tên đầy đủ trong gợi ý rồi bấm Tìm kiếm.', 'error');
+    return;
   }
+  showToast(canCreateBuild()
+    ? 'Không tìm thấy tên Pokémon này. Mod/admin có thể thêm tên trong Quản lý tên linh thú.'
+    : 'Không tìm thấy Pokémon đã có build phù hợp.', 'error');
 }
 
 async function selectCreatureFromTypedName() {
@@ -1551,7 +1537,7 @@ function renderBuilderDetail() {
         <h2>${avatarHtml(selectedBuilder, 'avatar-lg')} ${roleNameHtml(selectedBuilder, label)}</h2>
         <div class="pet-meta">
           ${roleBadgeHtml(selectedBuilder?.role || 'mod', 'strong-badge')}
-          <span class="badge">${Number(builds.length || selectedBuilder?.buildCount || 0)} build</span>
+          ${canSeeBuildCounts() ? `<span class="badge">${Number(builds.length || selectedBuilder?.buildCount || 0)} build</span>` : ''}
         </div>
       </div>
       <div class="detail-actions">
@@ -1618,7 +1604,7 @@ function renderDetail() {
         <h2>${escapeHtml(selectedCreature.name)}</h2>
         <div class="pet-meta">
           ${selectedCreature.generation ? `<span class="badge strong-badge">Pokémon Gen ${Number(selectedCreature.generation)}</span>` : ''}
-          <span class="badge strong-badge">${Number(selectedCreature.buildCount || selectedBuilds.length || 0)} build</span>
+          ${canSeeBuildCounts() ? `<span class="badge strong-badge">${Number(selectedCreature.buildCount || selectedBuilds.length || 0)} build</span>` : ''}
           ${Number(selectedCreature.suggestedSkillCount || selectedCreature.suggestedSkills?.length || 0) ? `<span class="badge">${Number(selectedCreature.suggestedSkillCount || selectedCreature.suggestedSkills?.length || 0)} skill</span>` : ''}
           ${alreadyBuilt ? '<span class="badge">Bạn đã có build</span>' : ''}
         </div>
@@ -2023,7 +2009,7 @@ function renderCreatureLogs(items = [], total = items.length) {
           </div>
         </td>
         <td><span class="badge"><span class="role-logo">${escapeHtml(role.logo || '🏷️')}</span> ${escapeHtml(role.name || role.key || 'user')}</span></td>
-        <td><span class="badge">${Number(item.buildCount || 0)} build</span></td>
+        <td>${admin ? `<span class="badge">${Number(item.buildCount || 0)} build</span>` : '<span class="muted">Admin</span>'}</td>
         <td>${formatDate(item.createdAt)}</td>
         <td><button class="ghost small open-creature-log" data-id="${escapeAttr(item.id)}" type="button">Mở</button></td>
       </tr>
@@ -2075,7 +2061,7 @@ function renderCreaturesTable(items, total = items.length) {
       <td><input class="creature-name-input" data-id="${escapeAttr(item.id)}" value="${escapeAttr(item.name)}" ${admin ? '' : 'readonly'} /></td>
       <td>${item.generation ? `<span class="badge">Gen ${Number(item.generation)}</span>` : '<span class="muted">-</span>'}</td>
       <td><span class="badge">${Number(item.suggestedSkillCount || 0)} skill</span></td>
-      <td><span class="badge">${Number(item.buildCount || 0)} build</span></td>
+      <td>${admin ? `<span class="badge">${Number(item.buildCount || 0)} build</span>` : '<span class="muted">Admin</span>'}</td>
       <td>${formatDate(item.updatedAt || item.createdAt)}</td>
       <td class="table-actions">
         ${admin ? `<button class="ghost small save-creature" data-id="${escapeAttr(item.id)}" type="button">Lưu tên</button>` : ''}
@@ -2194,7 +2180,7 @@ async function openUsersDialog() {
   if (!isAdmin()) return;
   await loadRoleSettings();
   await loadRegistrationAdmin();
-  await loadUsers();
+  await Promise.all([loadUsers(), loadAdminStats()]);
   renderRegistrationSettingsForm();
   renderRoleSettingsTable();
   renderRoleSelectOptions();
@@ -2235,6 +2221,47 @@ async function saveRegistrationSettings() {
   } catch (error) {
     showToast(error.message || 'Không thể lưu cài đặt đăng ký.', 'error');
   }
+}
+
+async function loadAdminStats() {
+  if (!isAdmin() || !el.adminStatsSummary) return;
+  try {
+    const data = await api('/api/users/stats');
+    renderAdminStats(data);
+  } catch (error) {
+    console.warn(error);
+    if (el.adminStatsSummary) {
+      el.adminStatsSummary.innerHTML = '<p class="muted">Không tải được thống kê.</p>';
+    }
+  }
+}
+
+function renderAdminStats(data = {}) {
+  if (!el.adminStatsSummary) return;
+  const totalBuiltPokemon = Number(data.totalBuiltPokemon || 0);
+  const totalBuilds = Number(data.totalBuilds || 0);
+  const totalUsers = Number(data.totalUsers || 0);
+  el.adminStatsSummary.innerHTML = `
+    <div class="stat-chip"><strong>${totalBuiltPokemon}</strong><span>Pokémon đã được build</span></div>
+    <div class="stat-chip"><strong>${totalBuilds}</strong><span>Tổng số build</span></div>
+    <div class="stat-chip"><strong>${totalUsers}</strong><span>Tổng tài khoản</span></div>
+  `;
+
+  if (!el.registrationDailyList) return;
+  const days = Array.isArray(data.registrationsByDay) ? data.registrationsByDay : [];
+  el.registrationDailyList.innerHTML = days.length ? days.map(day => `
+    <details class="registration-day">
+      <summary><strong>${escapeHtml(day.date)}</strong><span>${Number(day.count || 0)} tài khoản</span></summary>
+      <div class="registration-users">
+        ${(day.users || []).map(user => `
+          <span class="registration-user-pill">
+            ${roleNameHtml(user)}
+            <small>${escapeHtml(user.createdVia || 'admin')}</small>
+          </span>
+        `).join('')}
+      </div>
+    </details>
+  `).join('') : '<p class="muted">Chưa có dữ liệu đăng ký.</p>';
 }
 
 async function loadUsers() {
@@ -2381,7 +2408,7 @@ async function saveRoleDefinitions(nextRoles) {
     roleDefinitions = result.roles || roleDefinitions;
     renderRoleSelectOptions();
     renderRoleSettingsTable();
-    await Promise.all([loadUsers(), loadMods()]);
+    await Promise.all([loadUsers(), loadMods(), loadAdminStats()]);
     updatePermissionUI();
     showToast(result.message || 'Đã lưu role.');
   } catch (error) {
@@ -2409,7 +2436,7 @@ async function createUser() {
     });
     el.createUserForm.reset();
     showToast('Đã tạo tài khoản.');
-    await Promise.all([loadUsers(), loadMods()]);
+    await Promise.all([loadUsers(), loadMods(), loadAdminStats()]);
   } catch (error) {
     showToast(error.message, 'error');
   }
@@ -2419,7 +2446,7 @@ async function updateUserProfile(id, displayName, gameName) {
   try {
     await api(`/api/users/${id}/profile`, { method: 'PATCH', body: { displayName, gameName } });
     showToast('Đã cập nhật tên.');
-    await Promise.all([loadUsers(), loadMods()]);
+    await Promise.all([loadUsers(), loadMods(), loadAdminStats()]);
     if (selectedCreature) await selectCreature(selectedCreature.id, selectedBuildId, false);
   } catch (error) {
     showToast(error.message, 'error');
@@ -2430,7 +2457,7 @@ async function updateUserRole(id, role) {
   try {
     await api(`/api/users/${id}/role`, { method: 'PATCH', body: { role } });
     showToast('Đã đổi quyền tài khoản.');
-    await Promise.all([loadUsers(), loadMods()]);
+    await Promise.all([loadUsers(), loadMods(), loadAdminStats()]);
     if (selectedCreature) await selectCreature(selectedCreature.id, selectedBuildId, false);
   } catch (error) {
     showToast(error.message, 'error');
@@ -2451,7 +2478,7 @@ async function deleteUser(id) {
   try {
     await api(`/api/users/${id}`, { method: 'DELETE' });
     showToast('Đã xóa tài khoản.');
-    await Promise.all([loadUsers(), loadMods(), loadCreatures()]);
+    await Promise.all([loadUsers(), loadMods(), loadCreatures(), loadAdminStats()]);
     if (selectedCreature) await selectCreature(selectedCreature.id, selectedBuildId, false);
   } catch (error) {
     showToast(error.message, 'error');
